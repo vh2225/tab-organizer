@@ -1,26 +1,31 @@
-// Browser-facing actions. These touch chrome.* and are driven from the popup or
-// the keyboard command / context menu in background.js. All pure decision logic
-// lives in categorize.js so this file stays a thin orchestration layer.
+// Browser-facing actions. These touch chrome.* and are driven from the popup, the
+// keyboard command, or the context menu. All pure decision logic lives in
+// categorize.js; user config in settings.js; tier gating in license.js.
 
 import { planGroups, findDuplicateTabIds, sortKey, categorize, categoryMeta, registrableDomain }
   from './categorize.js';
+import { loadSettings } from './settings.js';
+import { hasFeature } from './license.js';
 import { aiAvailable, aiCategorize } from './ai.js';
 
 const currentWindowTabs = () => chrome.tabs.query({ currentWindow: true });
 
 // Group all tabs in the current window into native tab groups by smart category.
 export async function groupTabs({ useAi = false } = {}) {
+  const settings = await loadSettings();
   const tabs = await currentWindowTabs();
   const groupable = tabs.filter((t) => !t.pinned && t.id != null);
 
   let aiCategories = null;
-  if (useAi && (await aiAvailable())) {
-    const leftovers = groupable.filter((t) => !categorize(t))
+  if (useAi && (await hasFeature('ai')) && (await aiAvailable())) {
+    const leftovers = groupable.filter((t) => !categorize(t, settings.categories))
       .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
     aiCategories = await aiCategorize(leftovers);
   }
 
-  const plan = planGroups(groupable, { minGroupSize: 2, aiCategories });
+  const plan = planGroups(groupable, {
+    minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories,
+  });
   let groupsMade = 0;
   let tabsGrouped = 0;
   for (const g of plan) {
@@ -43,10 +48,11 @@ export async function ungroupAll() {
 
 // Reorder tabs so related ones are adjacent (category -> domain -> title).
 export async function sortTabs() {
+  const settings = await loadSettings();
   const tabs = await currentWindowTabs();
   const movable = tabs.filter((t) => !t.pinned);
   const pinnedCount = tabs.length - movable.length;
-  const ordered = [...movable].sort((a, b) => sortKey(a).localeCompare(sortKey(b)));
+  const ordered = [...movable].sort((a, b) => sortKey(a, settings.categories).localeCompare(sortKey(b, settings.categories)));
   for (let i = 0; i < ordered.length; i += 1) {
     await chrome.tabs.move(ordered[i].id, { index: pinnedCount + i });
   }
@@ -62,8 +68,7 @@ export async function dedupeTabs() {
   return { closed: dupes.length };
 }
 
-// Save all tabs in the current window as a dated bookmark folder under a parent
-// "Tab Organizer Sessions" folder in Other Bookmarks.
+// Save all tabs in the current window as a dated bookmark folder.
 export async function saveSession() {
   const tabs = await currentWindowTabs();
   const saveable = tabs.filter((t) => /^https?:/.test(t.url || ''));
@@ -76,22 +81,21 @@ export async function saveSession() {
   return { saved: saveable.length, folder: folder.title };
 }
 
-// File loose bookmarks sitting directly in a target folder into category subfolders,
-// and drop exact-duplicate URLs. Default target: Other Bookmarks ('2'). Existing
-// subfolders are left untouched — only top-level loose bookmarks are organized.
-export async function organizeBookmarks({ parentId = '2' } = {}) {
-  const children = await chrome.bookmarks.getChildren(parentId);
-  const loose = children.filter((c) => c.url); // skip folders
+// File loose bookmarks in a target folder into category subfolders + drop dup URLs.
+export async function organizeBookmarks({ parentId } = {}) {
+  const settings = await loadSettings();
+  const target = parentId || settings.bookmarkParentId || '2';
+  const children = await chrome.bookmarks.getChildren(target);
+  const loose = children.filter((c) => c.url);
   const seen = new Set();
   let filed = 0;
   let deduped = 0;
   const folderCache = new Map();
 
-  const folderFor = async (label, color) => {
-    const key = `${label}`;
-    if (folderCache.has(key)) return folderCache.get(key);
-    const f = await ensureFolder(label, parentId);
-    folderCache.set(key, f);
+  const folderFor = async (label) => {
+    if (folderCache.has(label)) return folderCache.get(label);
+    const f = await ensureFolder(label, target);
+    folderCache.set(label, f);
     return f;
   };
 
@@ -100,9 +104,9 @@ export async function organizeBookmarks({ parentId = '2' } = {}) {
     if (seen.has(norm)) { await chrome.bookmarks.remove(bm.id); deduped += 1; continue; }
     seen.add(norm);
 
-    const catId = categorize(bm);
+    const catId = categorize(bm, settings.categories);
     let label;
-    if (catId) { const m = categoryMeta(catId); label = `${m.emoji} ${m.label}`; }
+    if (catId) { const m = categoryMeta(catId, settings.categories); label = `${m.emoji} ${m.label}`; }
     else { const dom = registrableDomain(bm.url); label = dom ? `🔖 ${dom}` : '🔖 Other'; }
 
     const folder = await folderFor(label);
@@ -112,7 +116,14 @@ export async function organizeBookmarks({ parentId = '2' } = {}) {
   return { filed, deduped };
 }
 
-// Find-or-create a subfolder by title under parentId.
+// Pro: auto-group on startup / new window (called by background.js when enabled).
+export async function maybeAutoGroup() {
+  const settings = await loadSettings();
+  if (!settings.autoGroupOnStartup) return;
+  if (!(await hasFeature('autoGroup'))) return;
+  await groupTabs({ useAi: settings.useAiByDefault });
+}
+
 async function ensureFolder(title, parentId) {
   const children = await chrome.bookmarks.getChildren(parentId);
   const existing = children.find((c) => !c.url && c.title === title);

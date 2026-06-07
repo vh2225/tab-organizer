@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Smart Tab & Bookmark Organizer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Smartly group open tabs by topic, de-duplicate, sort, save sessions, and auto-file bookmarks into category folders.",
   "permissions": ["tabs", "tabGroups", "bookmarks", "storage", "contextMenus"],
   "action": {
@@ -17,6 +17,10 @@
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
     "128": "icons/icon128.png"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
   },
   "background": {
     "service_worker": "background.js",

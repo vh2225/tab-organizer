@@ -1,9 +1,13 @@
 // Pure categorization logic — NO chrome.* here, so it is unit-testable in Node.
-// Everything that touches the browser lives in actions.js.
+// Everything that touches the browser lives in actions.js / settings.js.
+//
+// All functions take a `categories` list so the product can ship sensible defaults
+// AND let each user customize them (persisted via settings.js). The defaults below
+// are just the seed.
 
 // Tab-group colors must be one of Chrome's allowed values:
 // grey, blue, red, yellow, green, pink, purple, cyan, orange.
-export const CATEGORIES = [
+export const DEFAULT_CATEGORIES = [
   { id: 'dev', label: 'Dev', color: 'blue', emoji: '💻',
     domains: ['github.com', 'gitlab.com', 'bitbucket.org', 'stackoverflow.com', 'stackexchange.com',
       'developer.mozilla.org', 'npmjs.com', 'pypi.org', 'readthedocs.io', 'codepen.io', 'jsfiddle.net',
@@ -52,8 +56,8 @@ export const CATEGORIES = [
     keywords: ['flight', 'hotel', 'itinerary', 'reservation'] },
 ];
 
-const byId = new Map(CATEGORIES.map((c) => [c.id, c]));
-export const categoryMeta = (id) => byId.get(id) || null;
+export const categoryMeta = (id, categories = DEFAULT_CATEGORIES) =>
+  categories.find((c) => c.id === id) || null;
 
 export function hostnameOf(url) {
   try { return new URL(url).hostname.replace(/^www\./, '').toLowerCase(); }
@@ -70,20 +74,20 @@ export function registrableDomain(url) {
 
 // Returns a category id, or null when nothing matches (-> domain fallback).
 // Accepts anything shaped like { url, title } — works for tabs AND bookmarks.
-export function categorize(item) {
+export function categorize(item, categories = DEFAULT_CATEGORIES) {
   const url = (item.url || item.pendingUrl || '').toLowerCase();
   if (!url || url.startsWith('chrome:') || url.startsWith('edge:') || url.startsWith('about:')) return null;
   const host = hostnameOf(url);
   const title = (item.title || '').toLowerCase();
 
   // 1) Domain match is the strongest signal.
-  for (const c of CATEGORIES) {
-    if (c.domains.some((d) => host.includes(d) || url.includes(d))) return c.id;
+  for (const c of categories) {
+    if ((c.domains || []).some((d) => host.includes(d) || url.includes(d))) return c.id;
   }
   // 2) Keyword in the title (padded to reduce false positives on short tokens).
   const paddedTitle = ` ${title} `;
-  for (const c of CATEGORIES) {
-    if (c.keywords.some((k) => paddedTitle.includes(k))) return c.id;
+  for (const c of categories) {
+    if ((c.keywords || []).some((k) => paddedTitle.includes(k))) return c.id;
   }
   return null;
 }
@@ -99,14 +103,14 @@ export function normalizeUrl(url) {
 
 // Build a grouping plan from a list of tabs (each needs at least {id,url,title}).
 // Returns [{ key, label, color, ids:[tabId,...] }], only for groups >= minGroupSize.
-// Optional aiAssign(item) -> categoryId|null lets callers fold in on-device AI for
-// the items that the heuristics could not place; it never overrides a confident match.
-export function planGroups(tabs, { minGroupSize = 2, aiCategories = null } = {}) {
+// aiCategories (Map<tabId, categoryId>) folds in on-device AI for items the heuristics
+// could not place; it never overrides a confident match.
+export function planGroups(tabs, { minGroupSize = 2, aiCategories = null, categories = DEFAULT_CATEGORIES } = {}) {
   const byCat = new Map();
   const uncategorized = [];
 
   const place = (t, id) => {
-    const m = categoryMeta(id);
+    const m = categoryMeta(id, categories);
     if (!m) return false;
     if (!byCat.has(id)) byCat.set(id, { key: id, label: `${m.emoji} ${m.label}`, color: m.color, ids: [] });
     byCat.get(id).ids.push(t.id);
@@ -114,12 +118,12 @@ export function planGroups(tabs, { minGroupSize = 2, aiCategories = null } = {})
   };
 
   for (const t of tabs) {
-    const id = categorize(t);
+    const id = categorize(t, categories);
     if (id) place(t, id);
     else uncategorized.push(t);
   }
 
-  // Optional AI pass over the leftovers (aiCategories: Map<tabId, categoryId>).
+  // Optional AI pass over the leftovers.
   const stillUncategorized = [];
   for (const t of uncategorized) {
     const aid = aiCategories && aiCategories.get(t.id);
@@ -155,9 +159,9 @@ export function findDuplicateTabIds(tabs) {
 }
 
 // A stable sort key so related tabs end up adjacent: category order, then domain, then title.
-export function sortKey(tab) {
-  const id = categorize(tab);
-  const catIndex = id ? CATEGORIES.findIndex((c) => c.id === id) : CATEGORIES.length;
+export function sortKey(tab, categories = DEFAULT_CATEGORIES) {
+  const id = categorize(tab, categories);
+  const catIndex = id ? categories.findIndex((c) => c.id === id) : categories.length;
   const dom = registrableDomain(tab.url || tab.pendingUrl || '');
   return `${String(catIndex).padStart(2, '0')}|${dom}|${(tab.title || '').toLowerCase()}`;
 }

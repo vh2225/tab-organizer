@@ -7,7 +7,10 @@
 </head>
 <body>
   <header>
-    <h1>Smart Organizer</h1>
+    <div class="row">
+      <h1>Smart Organizer</h1>
+      <span id="tier" class="badge">Free</span>
+    </div>
     <p id="summary">…</p>
   </header>
 
@@ -27,10 +30,15 @@
   <section>
     <h2>Bookmarks</h2>
     <button data-action="organizeBookmarks">🗂️ File loose bookmarks into folders</button>
-    <p class="hint">Sorts loose bookmarks in <em>Other Bookmarks</em> into category folders and removes exact duplicates. Existing folders are left alone.</p>
+    <p class="hint">Sorts loose bookmarks into category folders and removes exact duplicates. Existing folders are left alone.</p>
   </section>
 
   <p id="status" role="status"></p>
+
+  <footer>
+    <a id="settingsLink" href="#">⚙️ Settings</a>
+    <a id="upgradeLink" href="#" class="upgrade hidden">⭐ Upgrade to Pro</a>
+  </footer>
 
   <script type="module" src="popup.js"></script>
 </body>

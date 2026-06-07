@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Smart Tab & Bookmark Organizer — Settings</title>
+  <link rel="stylesheet" href="options.css" />
+</head>
+<body>
+  <main>
+    <div id="welcome" class="welcome hidden">
+      👋 <strong>Welcome!</strong> You're all set. Open the toolbar popup and hit
+      <em>Group tabs by topic</em>. Customize your categories below — they're yours to edit.
+    </div>
+
+    <header>
+      <h1>Smart Tab &amp; Bookmark Organizer</h1>
+      <span id="tier" class="badge">Free</span>
+    </header>
+
+    <section>
+      <h2>Preferences</h2>
+      <label class="field">
+        Minimum tabs to form a group
+        <input type="number" id="minGroupSize" min="1" max="20" />
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="useAiByDefault" />
+        Use on-device AI for unknown tabs by default <span class="pro-tag">Pro</span>
+      </label>
+      <label class="field checkbox">
+        <input type="checkbox" id="autoGroupOnStartup" />
+        Auto-group tabs on startup &amp; new windows <span class="pro-tag">Pro</span>
+      </label>
+      <label class="field">
+        Organize bookmarks in
+        <select id="bookmarkParentId">
+          <option value="2">Other Bookmarks</option>
+          <option value="1">Bookmarks Bar</option>
+        </select>
+      </label>
+    </section>
+
+    <section>
+      <div class="row">
+        <h2>Categories</h2>
+        <button id="addCategory" class="small">+ Add category</button>
+      </div>
+      <p class="hint">Each category becomes a colored tab group. One domain or keyword per line.</p>
+      <div id="categories"></div>
+    </section>
+
+    <section>
+      <h2>License</h2>
+      <p id="licenseState" class="hint"></p>
+      <div id="freeBox">
+        <p class="hint">Pro unlocks on-device AI grouping and startup automation.</p>
+        <div class="row">
+          <input type="text" id="licenseKey" placeholder="Paste license key" />
+          <button id="activate" class="small">Activate</button>
+        </div>
+        <button id="upgrade" class="small primary">⭐ Upgrade to Pro</button>
+      </div>
+      <button id="deactivate" class="small ghost hidden">Deactivate Pro</button>
+    </section>
+
+    <div class="actions">
+      <button id="save" class="primary">Save changes</button>
+      <button id="reset" class="ghost">Reset to defaults</button>
+      <span id="saved" class="saved hidden">Saved ✓</span>
+    </div>
+  </main>
+  <script type="module" src="options.js"></script>
+</body>
+</html>

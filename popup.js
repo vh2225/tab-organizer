@@ -1,10 +1,11 @@
 import * as actions from './src/actions.js';
 import { aiAvailable } from './src/ai.js';
+import { loadSettings } from './src/settings.js';
+import { getLicense, hasFeature, CHECKOUT_URL } from './src/license.js';
 
 const $ = (sel) => document.querySelector(sel);
 const statusEl = $('#status');
 
-// Human-readable result messages per action.
 const MESSAGES = {
   groupTabs: (r) => r.groupsMade ? `Grouped ${r.tabsGrouped} tabs into ${r.groupsMade} groups.` : 'Nothing to group (need 2+ related tabs).',
   ungroupAll: (r) => r.ungrouped ? `Ungrouped ${r.ungrouped} tabs.` : 'No groups to remove.',
@@ -36,19 +37,26 @@ async function refreshSummary() {
   $('#summary').textContent = `${tabs.length} tabs · ${groups.size} group${groups.size === 1 ? '' : 's'}`;
 }
 
-async function initAiToggle() {
-  const ok = await aiAvailable();
+async function initTierAndAi() {
+  const [{ tier }, settings, aiOk, canAi] = await Promise.all([
+    getLicense(), loadSettings(), aiAvailable(), hasFeature('ai'),
+  ]);
+
+  $('#tier').textContent = tier === 'pro' ? 'Pro' : 'Free';
+  $('#tier').classList.toggle('pro', tier === 'pro');
+  if (tier !== 'pro') $('#upgradeLink').classList.remove('hidden');
+
   const box = $('#useAi');
-  if (!ok) {
-    box.checked = false;
-    box.disabled = true;
-    $('#aiStatus').textContent = '(unavailable)';
-  }
+  box.checked = settings.useAiByDefault && canAi && aiOk;
+  if (!canAi) { box.disabled = true; $('#aiStatus').textContent = '(Pro)'; }
+  else if (!aiOk) { box.disabled = true; $('#aiStatus').textContent = '(model unavailable)'; }
 }
 
 document.querySelectorAll('button[data-action]').forEach((btn) => {
   btn.addEventListener('click', () => run(btn.dataset.action));
 });
+$('#settingsLink').addEventListener('click', (e) => { e.preventDefault(); chrome.runtime.openOptionsPage(); });
+$('#upgradeLink').addEventListener('click', (e) => { e.preventDefault(); chrome.tabs.create({ url: CHECKOUT_URL }); });
 
 refreshSummary();
-initAiToggle();
+initTierAndAi();

@@ -42,8 +42,24 @@ tabs anywhere — all categorization is local either way.
 
 ## Customize categories
 
-Edit `src/categorize.js` — the `CATEGORIES` array maps domains/keywords → a labeled, colored
-group. Add your own domains or new categories there; no build step.
+No code needed — open **Settings** (popup → ⚙️, or the Options page) and edit the **Categories**
+list: name, emoji, color, domains, and keywords per category. Saved to `chrome.storage.sync`, so
+they follow you across devices. (The seed defaults live in `src/categorize.js` → `DEFAULT_CATEGORIES`.)
+
+## Productize it (Free / Pro)
+
+This is built to ship as a product with a privacy-first wedge: **100% local, no account, free
+on-device AI** — something cloud tab managers (Toby, Workona) structurally can't claim.
+
+- **Tiering** (`src/license.js`): Free = all manual organizing + custom categories. Pro =
+  on-device AI grouping + auto-group on startup/new windows. Classic "manual free / automatic Pro"
+  split that keeps the free tier a genuine acquisition engine.
+- **Wire payments** (no secrets in the repo): set `CHECKOUT_URL` in `src/license.js` and replace
+  `checkRemoteLicense()` with either **ExtensionPay** (easiest for MV3) or a **Stripe Payment
+  Link + license key**. Until then it runs fully as Free; paste any 6+ char key in Settings to
+  test the Pro flow locally.
+- **Publish**: see `store/listing.md` (name, descriptions, screenshot shotlist, submission
+  checklist) and `store/PRIVACY.md` (required privacy policy — host it publicly and link it).
 
 ## Develop / test
 
@@ -58,10 +74,14 @@ node --test        # runs test/categorize.test.mjs
 
 | File | Purpose |
 | --- | --- |
-| `manifest.json` | MV3 manifest (permissions, action, command) |
+| `manifest.json` | MV3 manifest (permissions, action, options, command) |
 | `src/categorize.js` | Pure categorization + grouping/dedupe/sort logic (unit-tested) |
+| `src/settings.js` | User settings + custom categories (chrome.storage; pure merge helpers tested) |
+| `src/license.js` | Free/Pro tiering + payment seam (no secrets) |
 | `src/ai.js` | Optional on-device Prompt API pass (best-effort, graceful fallback) |
 | `src/actions.js` | `chrome.*` orchestration for each action |
 | `popup.html/.css/.js` | The toolbar popup UI |
-| `background.js` | Service worker: keyboard command + context menu |
+| `options.html/.css/.js` | Settings: editable categories, preferences, license |
+| `background.js` | Service worker: command, context menu, onboarding, Pro auto-group |
+| `store/` | Web Store listing copy + privacy policy |
 | `test/` | Node unit tests for the pure logic |
