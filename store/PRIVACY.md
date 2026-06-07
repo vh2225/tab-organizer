@@ -28,11 +28,10 @@ If you enable "Use on-device AI for unknown tabs," categorization uses Chrome's 
 on-device** AI model (Gemini Nano). This also runs **locally** — your tab information is **not**
 sent over the network.
 
-## Payments (Pro)
+## Cost
 
-If you purchase Pro, payment is handled by our payment processor (e.g. ExtensionPay/Stripe).
-We never see or store your full payment-card details. The only thing stored locally is your
-license status (free/pro).
+The extension is **completely free** — no paid tiers, no in-app purchases, no payment
+processing of any kind.
 
 ## Permissions, plainly
 

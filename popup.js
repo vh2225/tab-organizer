@@ -1,7 +1,6 @@
 import * as actions from './src/actions.js';
 import { aiAvailable } from './src/ai.js';
 import { loadSettings } from './src/settings.js';
-import { getLicense, hasFeature, CHECKOUT_URL } from './src/license.js';
 
 const $ = (sel) => document.querySelector(sel);
 const statusEl = $('#status');
@@ -37,26 +36,17 @@ async function refreshSummary() {
   $('#summary').textContent = `${tabs.length} tabs · ${groups.size} group${groups.size === 1 ? '' : 's'}`;
 }
 
-async function initTierAndAi() {
-  const [{ tier }, settings, aiOk, canAi] = await Promise.all([
-    getLicense(), loadSettings(), aiAvailable(), hasFeature('ai'),
-  ]);
-
-  $('#tier').textContent = tier === 'pro' ? 'Pro' : 'Free';
-  $('#tier').classList.toggle('pro', tier === 'pro');
-  if (tier !== 'pro') $('#upgradeLink').classList.remove('hidden');
-
+async function initAi() {
+  const [settings, aiOk] = await Promise.all([loadSettings(), aiAvailable()]);
   const box = $('#useAi');
-  box.checked = settings.useAiByDefault && canAi && aiOk;
-  if (!canAi) { box.disabled = true; $('#aiStatus').textContent = '(Pro)'; }
-  else if (!aiOk) { box.disabled = true; $('#aiStatus').textContent = '(model unavailable)'; }
+  box.checked = settings.useAiByDefault && aiOk;
+  if (!aiOk) { box.disabled = true; $('#aiStatus').textContent = '(model unavailable)'; }
 }
 
 document.querySelectorAll('button[data-action]').forEach((btn) => {
   btn.addEventListener('click', () => run(btn.dataset.action));
 });
 $('#settingsLink').addEventListener('click', (e) => { e.preventDefault(); chrome.runtime.openOptionsPage(); });
-$('#upgradeLink').addEventListener('click', (e) => { e.preventDefault(); chrome.tabs.create({ url: CHECKOUT_URL }); });
 
 refreshSummary();
-initTierAndAi();
+initAi();

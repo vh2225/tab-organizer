@@ -21,20 +21,18 @@ Unlike cloud tab managers, this extension needs **no account, no sign-in, and no
 organizing happens locally in your browser — your tabs, URLs, and bookmarks **never leave your
 machine.** Optional smart categorization uses Chrome's **built-in on-device AI** (also 100% local).
 
-**What you get (Free):**
+**Everything's included — free, no account, no tracking:**
 • Group tabs by topic into native tab groups, color-coded
 • Sort tabs so related ones sit together
 • Close duplicate tabs (keeps the first, skips pinned)
 • Save all tabs as a dated bookmark "session"
 • File loose bookmarks into category folders + remove duplicate bookmarks
 • Fully customizable categories — make it match how *you* browse
+• On-device AI grouping for sites the rules don't recognize (optional, 100% local)
+• Auto-group on startup and every new window — set it and forget it
 • Keyboard shortcut (Ctrl/Cmd+Shift+O) and right-click menu
 
-**Pro:**
-• On-device AI grouping for sites the rules don't recognize
-• Auto-group on startup and every new window — set it and forget it
-
-No tracking. No ads. No account. Just a tidy browser.
+No tracking. No ads. No account. No paid tiers. Just a tidy browser.
 
 ## Screenshots to capture (1280×800)
 1. A messy window → after "Group tabs by topic" (color-coded groups). The hero shot.
@@ -48,10 +46,7 @@ No tracking. No ads. No account. Just a tidy browser.
 - [ ] 128×128 icon (included: `icons/icon128.png`)
 - [ ] At least 1 screenshot (1280×800 or 640×400)
 - [ ] Justify each permission in the listing's privacy tab (see PRIVACY.md table)
-- [ ] Set `CHECKOUT_URL` in `src/license.js` and wire a payment provider (ExtensionPay/Stripe)
 - [ ] Replace contact email in PRIVACY.md
 
-## Pricing idea (starting point — validate)
-Free tier drives installs + reviews; Pro one-time $9–15 or $1.49/mo. The on-device-AI +
-automation split is the upgrade trigger. Keep the free tier genuinely useful (it's the
-acquisition engine and the review magnet).
+This is a **free** extension — no payment integration, no paid tiers. Source is MIT-licensed
+(see `LICENSE`), so it can also live on GitHub for issues/contributions.

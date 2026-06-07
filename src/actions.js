@@ -1,11 +1,10 @@
 // Browser-facing actions. These touch chrome.* and are driven from the popup, the
 // keyboard command, or the context menu. All pure decision logic lives in
-// categorize.js; user config in settings.js; tier gating in license.js.
+// categorize.js; user config in settings.js.
 
 import { planGroups, findDuplicateTabIds, sortKey, categorize, categoryMeta, registrableDomain }
   from './categorize.js';
 import { loadSettings } from './settings.js';
-import { hasFeature } from './license.js';
 import { aiAvailable, aiCategorize } from './ai.js';
 
 const currentWindowTabs = () => chrome.tabs.query({ currentWindow: true });
@@ -17,7 +16,7 @@ export async function groupTabs({ useAi = false } = {}) {
   const groupable = tabs.filter((t) => !t.pinned && t.id != null);
 
   let aiCategories = null;
-  if (useAi && (await hasFeature('ai')) && (await aiAvailable())) {
+  if (useAi && (await aiAvailable())) {
     const leftovers = groupable.filter((t) => !categorize(t, settings.categories))
       .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
     aiCategories = await aiCategorize(leftovers);
@@ -116,11 +115,10 @@ export async function organizeBookmarks({ parentId } = {}) {
   return { filed, deduped };
 }
 
-// Pro: auto-group on startup / new window (called by background.js when enabled).
+// Auto-group on startup / new window (called by background.js when enabled in settings).
 export async function maybeAutoGroup() {
   const settings = await loadSettings();
   if (!settings.autoGroupOnStartup) return;
-  if (!(await hasFeature('autoGroup'))) return;
   await groupTabs({ useAi: settings.useAiByDefault });
 }
 

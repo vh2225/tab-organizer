@@ -1,5 +1,4 @@
 import { loadSettings, saveSettings, resetSettings } from './src/settings.js';
-import { getLicense, activate, deactivate, isPro, CHECKOUT_URL, FREE_CATEGORY_LIMIT } from './src/license.js';
 
 const $ = (s) => document.querySelector(s);
 const COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange'];
@@ -43,42 +42,21 @@ function collectCategories() {
 
 // ---- Load / save ----
 async function init() {
-  const [settings, license, pro] = await Promise.all([loadSettings(), getLicense(), isPro()]);
+  const settings = await loadSettings();
   $('#minGroupSize').value = settings.minGroupSize;
   $('#useAiByDefault').checked = settings.useAiByDefault;
   $('#autoGroupOnStartup').checked = settings.autoGroupOnStartup;
   $('#bookmarkParentId').value = settings.bookmarkParentId;
   renderCategories(settings.categories);
-  renderLicense(license, pro);
-}
-
-function renderLicense(license, pro) {
-  $('#tier').textContent = pro ? 'Pro' : 'Free';
-  $('#tier').classList.toggle('pro', pro);
-  $('#licenseState').textContent = pro
-    ? `Pro active${license.since ? ` since ${license.since.slice(0, 10)}` : ''}.`
-    : 'Free tier.';
-  $('#freeBox').classList.toggle('hidden', pro);
-  $('#deactivate').classList.toggle('hidden', !pro);
-  // Pro-only preference toggles
-  for (const id of ['#useAiByDefault', '#autoGroupOnStartup']) {
-    $(id).disabled = !pro;
-  }
 }
 
 async function save() {
-  let categories = collectCategories();
-  const pro = await isPro();
-  if (!pro && categories.length > FREE_CATEGORY_LIMIT) {
-    categories = categories.slice(0, FREE_CATEGORY_LIMIT);
-    flash(`Free tier keeps up to ${FREE_CATEGORY_LIMIT} categories — extras trimmed. Upgrade for unlimited.`);
-  }
   await saveSettings({
     minGroupSize: $('#minGroupSize').value,
     useAiByDefault: $('#useAiByDefault').checked,
     autoGroupOnStartup: $('#autoGroupOnStartup').checked,
     bookmarkParentId: $('#bookmarkParentId').value,
-    categories,
+    categories: collectCategories(),
   });
   flash('Saved ✓');
 }
@@ -103,20 +81,6 @@ $('#reset').addEventListener('click', async () => {
   $('#useAiByDefault').checked = s.useAiByDefault;
   $('#autoGroupOnStartup').checked = s.autoGroupOnStartup;
   flash('Reset to defaults ✓');
-});
-$('#upgrade').addEventListener('click', () => chrome.tabs.create({ url: CHECKOUT_URL }));
-$('#activate').addEventListener('click', async () => {
-  const res = await activate($('#licenseKey').value);
-  if (!res.ok) { flash(res.error); return; }
-  const [license, pro] = await Promise.all([getLicense(), isPro()]);
-  renderLicense(license, pro);
-  flash('Pro activated ✓');
-});
-$('#deactivate').addEventListener('click', async () => {
-  await deactivate();
-  const [license, pro] = await Promise.all([getLicense(), isPro()]);
-  renderLicense(license, pro);
-  flash('Switched to Free.');
 });
 
 init();
