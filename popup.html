@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <header>
+    <h1>Smart Organizer</h1>
+    <p id="summary">…</p>
+  </header>
+
+  <section>
+    <h2>Tabs</h2>
+    <button class="primary" data-action="groupTabs">📁 Group tabs by topic</button>
+    <button data-action="sortTabs">↕️ Sort tabs (related together)</button>
+    <button data-action="dedupeTabs">🧹 Close duplicate tabs</button>
+    <button data-action="saveSession">💾 Save all tabs as a session</button>
+    <button class="ghost" data-action="ungroupAll">✖️ Ungroup all</button>
+    <label class="toggle">
+      <input type="checkbox" id="useAi" /> Use on-device AI for unknown tabs
+      <span id="aiStatus" class="hint"></span>
+    </label>
+  </section>
+
+  <section>
+    <h2>Bookmarks</h2>
+    <button data-action="organizeBookmarks">🗂️ File loose bookmarks into folders</button>
+    <p class="hint">Sorts loose bookmarks in <em>Other Bookmarks</em> into category folders and removes exact duplicates. Existing folders are left alone.</p>
+  </section>
+
+  <p id="status" role="status"></p>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>
