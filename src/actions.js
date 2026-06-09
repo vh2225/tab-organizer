@@ -13,6 +13,20 @@ export { undoLast as undo };
 
 const currentWindowTabs = () => chrome.tabs.query({ currentWindow: true });
 
+// Put tabIds into the category's group, reusing an existing same-title group in that window
+// rather than always creating a new one — so re-running grouping merges instead of spawning
+// duplicate "Shopping" groups. Returns the group id.
+async function applyGroup(tabIds, label, color, windowId) {
+  const existing = await chrome.tabGroups.query({ windowId, title: label });
+  if (existing.length) {
+    await chrome.tabs.group({ groupId: existing[0].id, tabIds });
+    return existing[0].id;
+  }
+  const groupId = await chrome.tabs.group({ tabIds });
+  await chrome.tabGroups.update(groupId, { title: label, color });
+  return groupId;
+}
+
 // Group all tabs in the current window into native tab groups by smart category.
 // `useAi` defaults to the user's setting (on-device AI runs when available; no-op otherwise),
 // so the keyboard shortcut / context menu / auto-group get the smart pass too.
@@ -31,6 +45,7 @@ export async function groupTabs({ useAi } = {}) {
     aiCategories = await aiCategorize(leftovers, settings.categories);
   }
 
+  const windowId = (await chrome.windows.getCurrent()).id;
   const plan = planGroups(groupable, {
     minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories, domainIndex,
   });
@@ -39,8 +54,7 @@ export async function groupTabs({ useAi } = {}) {
   const grouped = [];
   for (const g of plan) {
     if (!g.ids.length) continue;
-    const groupId = await chrome.tabs.group({ tabIds: g.ids });
-    await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
+    await applyGroup(g.ids, g.label, g.color, windowId);
     groupsMade += 1;
     tabsGrouped += g.ids.length;
     grouped.push(...g.ids);
@@ -81,14 +95,13 @@ export async function groupAcrossWindows({ useAi } = {}) {
   const grouped = [];
   let groupsMade = 0;
   let tabsGrouped = 0;
-  for (const [, wtabs] of byWindow) {
+  for (const [windowId, wtabs] of byWindow) {
     const plan = planGroups(wtabs, {
       minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories, domainIndex,
     });
     for (const g of plan) {
       if (!g.ids.length) continue;
-      const groupId = await chrome.tabs.group({ tabIds: g.ids });
-      await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
+      await applyGroup(g.ids, g.label, g.color, windowId);
       grouped.push(...g.ids);
       groupsMade += 1;
       tabsGrouped += g.ids.length;

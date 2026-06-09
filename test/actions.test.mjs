@@ -28,6 +28,22 @@ test('groupTabs groups related tabs, skips pinned, and undo ungroups them', asyn
   assert.equal(await getUndo(), null, 'undo record cleared after replay');
 });
 
+test('groupTabs reuses an existing same-category group instead of creating a duplicate', async () => {
+  const state = installMockChrome({ tabs: [
+    tab(1, 'https://ebay.com/a'),
+    tab(2, 'https://amazon.com/x'),
+  ] });
+  // A pre-existing "Shopping" group already holds one of the tabs.
+  const gid = await chrome.tabs.group({ tabIds: [1] });
+  await chrome.tabGroups.update(gid, { title: '🛒 Shopping', color: 'yellow' });
+
+  await groupTabs();
+
+  const ids = new Set(state.tabs.filter((t) => [1, 2].includes(t.id)).map((t) => t.groupId));
+  assert.equal(ids.size, 1, 'both shopping tabs end up in ONE group');
+  assert.equal([...ids][0], gid, 'they joined the existing Shopping group, not a new one');
+});
+
 test('sortTabs reorders by category and undo restores original order', async () => {
   const state = installMockChrome({ tabs: [
     tab(1, 'https://youtube.com/x'),   // media (late)

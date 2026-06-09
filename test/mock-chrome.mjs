@@ -42,9 +42,11 @@ export function installMockChrome({ tabs = [], bookmarks = [], currentWindowId =
       }
       return out;
     },
-    group: async ({ tabIds }) => {
-      const gid = nextGroupId++;
-      for (const id of tabIds) { const f = findTab(id); if (f) f.tab.groupId = gid; }
+    group: async ({ tabIds, groupId }) => {
+      const gid = groupId != null ? groupId : nextGroupId++;
+      let win;
+      for (const id of tabIds) { const f = findTab(id); if (f) { f.tab.groupId = gid; win = f.windowId; } }
+      if (groupId == null && win != null) groups[gid] = { ...(groups[gid] || {}), windowId: win };
       return gid;
     },
     ungroup: async (ids) => {
@@ -70,8 +72,14 @@ export function installMockChrome({ tabs = [], bookmarks = [], currentWindowId =
     },
   };
   const tabGroupsApi = {
-    update: async (groupId, { title, color }) => { groups[groupId] = { title, color }; },
-    query: async () => Object.entries(groups).map(([id, g]) => ({ id: Number(id), ...g })),
+    update: async (groupId, { title, color }) => { groups[groupId] = { ...(groups[groupId] || {}), title, color }; },
+    query: async (info = {}) => {
+      const live = new Set(state.tabs.map((t) => t.groupId).filter((g) => g != null && g !== -1));
+      return Object.entries(groups)
+        .filter(([id]) => live.has(Number(id)))
+        .map(([id, g]) => ({ id: Number(id), ...g }))
+        .filter((g) => (info.windowId == null || g.windowId === info.windowId) && (info.title == null || g.title === info.title));
+    },
   };
   const windowsApi = { getCurrent: async () => ({ id: currentWindowId }) };
 
