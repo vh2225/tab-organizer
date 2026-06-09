@@ -23,7 +23,7 @@ machine.** Optional smart categorization uses Chrome's **built-in on-device AI**
 
 **Everything's included — free, no account, no tracking:**
 • Group tabs by topic into native tab groups, color-coded
-• Gather a topic that's scattered across several windows into one group
+• Group across all windows (toggle) — merge a topic that's split across windows into one group
 • Sort tabs so related ones sit together
 • Close duplicate tabs (keeps the first, skips pinned)
 • Undo the last action — reopens closed tabs, restores order, rebuilds groups

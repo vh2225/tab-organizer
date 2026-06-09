@@ -11,11 +11,10 @@ Gemini Nano) for tabs the rules don't recognize.
 - **Group tabs by topic** — collects open tabs into native Chrome tab groups (Dev, AI, Email,
   Social, Media, News, Shopping, Finance, Travel, Docs, Work…), each color-coded. Unknown sites
   are grouped by domain. Pinned tabs are left alone.
-- **Gather & group across windows** — when the same topic is scattered across several windows
-  (e.g. an eBay tab here, another there), pulls just those into the active window and groups
-  them. Topics that live in a single window are left exactly where they are. Undoable.
-  Prefer this as the default? Turn on **Group across all windows by default** in Settings and
-  the plain **Group tabs** button does it every time.
+- **Group across all windows** — flip the **Group across all windows** toggle (in the popup, right
+  under *Group tabs*) and the **Group tabs** button merges any category that's split across windows
+  into one group — moving those tabs together — and groups every window. Leave it off for
+  current-window-only grouping. Undoable. For a one-off, toggle on, group, toggle off.
 - **Sort tabs** — reorders so related tabs sit next to each other (category → domain → title).
 - **Close duplicate tabs** — closes repeat URLs, keeps the first (ignores `#fragments`, never
   touches pinned tabs).

@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { installMockChrome } from './mock-chrome.mjs';
 import {
-  groupTabs, ungroupAll, sortTabs, dedupeTabs, saveSession, organizeBookmarks, gatherAndGroup,
+  groupTabs, ungroupAll, sortTabs, dedupeTabs, saveSession, organizeBookmarks,
 } from '../src/actions.js';
 import { undoLast, getUndo } from '../src/undo.js';
 
@@ -87,24 +87,6 @@ test('saveSession writes every http tab into a dated session folder', async () =
 
 const winOf = async (id) => (await chrome.tabs.query({})).find((t) => t.id === id)?.windowId;
 
-test('gatherAndGroup pulls scattered tabs into the active window and undo sends them back', async () => {
-  installMockChrome({ currentWindowId: 1, tabs: [
-    tab(1, 'https://github.com/a', { windowId: 1 }),   // dev, active only -> left
-    tab(2, 'https://ebay.com/x', { windowId: 1 }),     // shopping, active
-    tab(3, 'https://ebay.com/x', { windowId: 2 }),     // shopping, other window -> gathered
-    tab(4, 'https://youtube.com/v', { windowId: 2 }),  // media, other only -> left
-  ] });
-  const r = await gatherAndGroup();
-  assert.equal(r.merged, 1, 'one tab moved in');
-  assert.equal(r.fromWindows, 1);
-  assert.equal(r.groupsMade, 1);
-  assert.equal(await winOf(3), 1, 'eBay tab pulled into active window');
-  assert.equal(await winOf(4), 2, 'unrelated tab left in its window');
-
-  await undoLast();
-  assert.equal(await winOf(3), 2, 'undo returned the tab to its original window');
-});
-
 test('groupTabs with groupAcrossWindows merges a split category and groups every window', async () => {
   installMockChrome({ currentWindowId: 1, tabs: [
     tab(1, 'https://ebay.com/a', { windowId: 1 }),   // shopping
@@ -130,18 +112,6 @@ test('groupTabs with groupAcrossWindows merges a split category and groups every
 
   await undoLast();
   assert.equal(await winOf(3), 2, 'undo returns the merged tab to its window');
-});
-
-test('gatherAndGroup is a no-op when nothing is scattered across windows', async () => {
-  installMockChrome({ currentWindowId: 1, tabs: [
-    tab(1, 'https://github.com/a', { windowId: 1 }),
-    tab(2, 'https://github.com/b', { windowId: 1 }),
-    tab(3, 'https://youtube.com/v', { windowId: 2 }),
-  ] });
-  const r = await gatherAndGroup();
-  assert.equal(r.merged, 0);
-  assert.equal(r.groupsMade, 0);
-  assert.equal(await getUndo(), null, 'no undo recorded when nothing happened');
 });
 
 test('organizeBookmarks files loose bookmarks into category folders and drops dup urls', async () => {

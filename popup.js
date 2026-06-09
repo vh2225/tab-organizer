@@ -1,6 +1,6 @@
 import * as actions from './src/actions.js';
 import { availabilityStatus, downloadModel } from './src/ai.js';
-import { loadSettings } from './src/settings.js';
+import { loadSettings, saveSettings } from './src/settings.js';
 import { getUndo } from './src/undo.js';
 
 const $ = (sel) => document.querySelector(sel);
@@ -14,9 +14,6 @@ const MESSAGES = {
     const base = `Grouped ${r.tabsGrouped} tabs into ${r.groupsMade} groups`;
     return r.mode === 'cross' && r.merged ? `${base} (merged ${r.merged} from ${r.fromWindows} other window${r.fromWindows === 1 ? '' : 's'}).` : `${base}.`;
   },
-  gatherAndGroup: (r) => r.groupsMade
-    ? `Merged ${r.merged} tab${r.merged === 1 ? '' : 's'} from ${r.fromWindows} other window${r.fromWindows === 1 ? '' : 's'} into ${r.groupsMade} group${r.groupsMade === 1 ? '' : 's'}.`
-    : 'Nothing is scattered across windows.',
   ungroupAll: (r) => r.ungrouped ? `Ungrouped ${r.ungrouped} tabs.` : 'No groups to remove.',
   sortTabs: (r) => `Sorted ${r.sorted} tabs.`,
   dedupeTabs: (r) => r.closed ? `Closed ${r.closed} duplicate tabs.` : 'No duplicates found.',
@@ -30,7 +27,7 @@ async function run(name) {
   buttons.forEach((b) => (b.disabled = true));
   statusEl.textContent = 'Working…';
   try {
-    const opts = (name === 'groupTabs' || name === 'gatherAndGroup') ? { useAi: $('#useAi').checked } : {};
+    const opts = name === 'groupTabs' ? { useAi: $('#useAi').checked } : {};
     const result = await actions[name](opts);
     statusEl.textContent = MESSAGES[name] ? MESSAGES[name](result) : 'Done.';
     if (name !== 'organizeBookmarks') refreshSummary();
@@ -46,6 +43,12 @@ async function refreshUndo() {
   const rec = await getUndo();
   $('#undoBtn').disabled = !rec;
 }
+
+async function initAcrossWindows() {
+  const settings = await loadSettings();
+  $('#acrossWindows').checked = settings.groupAcrossWindows;
+}
+$('#acrossWindows').addEventListener('change', (e) => saveSettings({ groupAcrossWindows: e.target.checked }));
 
 async function refreshSummary() {
   const tabs = await chrome.tabs.query({ currentWindow: true });
@@ -132,3 +135,4 @@ $('#aiDownloadBtn').addEventListener('click', runModelDownload);
 refreshSummary();
 initAi();
 refreshUndo();
+initAcrossWindows();

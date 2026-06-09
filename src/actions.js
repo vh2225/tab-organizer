@@ -98,40 +98,6 @@ export async function groupAcrossWindows({ useAi } = {}) {
   return { mode: 'cross', merged: moves.length, fromWindows: new Set(moves.map((m) => m.fromWindowId)).size, groupsMade, tabsGrouped };
 }
 
-// Cross-window "gather & group": pull tabs of any category that is scattered across 2+
-// windows into the active window and group them. Single-window topics are left untouched.
-export async function gatherAndGroup({ useAi } = {}) {
-  const settings = await loadSettings();
-  const domainIndex = await loadDomainIndex(settings.categories);
-  const wantAi = useAi === undefined ? settings.useAiByDefault : useAi;
-  const activeWindowId = (await chrome.windows.getCurrent()).id;
-  const all = await chrome.tabs.query({});
-  const usable = all.filter((t) => !t.pinned && t.id != null && /^https?:/.test(t.url || ''));
-
-  let aiCategories = null;
-  if (wantAi && (await aiAvailable())) {
-    const leftovers = usable.filter((t) => !categorize(t, settings.categories, domainIndex))
-      .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
-    aiCategories = await aiCategorize(leftovers, settings.categories);
-  }
-
-  const { moves, groups } = planGather(usable, {
-    activeWindowId, minGroupSize: settings.minGroupSize, categories: settings.categories, aiCategories, domainIndex,
-  });
-  if (!groups.length) return { merged: 0, fromWindows: 0, groupsMade: 0 };
-
-  const groupedIds = groups.flatMap((g) => g.ids);
-  await setUndo(gatherUndo(moves, groupedIds));
-
-  const fromWindows = new Set(moves.map((m) => m.fromWindowId)).size;
-  for (const m of moves) await chrome.tabs.move(m.id, { windowId: activeWindowId, index: -1 });
-  for (const g of groups) {
-    const groupId = await chrome.tabs.group({ tabIds: g.ids });
-    await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
-  }
-  return { merged: moves.length, fromWindows, groupsMade: groups.length };
-}
-
 // Remove every tab group in the current window (tabs stay open).
 export async function ungroupAll() {
   const tabs = await currentWindowTabs();
