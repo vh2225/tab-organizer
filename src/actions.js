@@ -18,6 +18,7 @@ const currentWindowTabs = () => chrome.tabs.query({ currentWindow: true });
 // so the keyboard shortcut / context menu / auto-group get the smart pass too.
 export async function groupTabs({ useAi } = {}) {
   const settings = await loadSettings();
+  if (settings.groupAcrossWindows) return groupAcrossWindows({ useAi });
   const domainIndex = await loadDomainIndex(settings.categories);
   const wantAi = useAi === undefined ? settings.useAiByDefault : useAi;
   const tabs = await currentWindowTabs();
@@ -46,6 +47,55 @@ export async function groupTabs({ useAi } = {}) {
   }
   if (grouped.length) await setUndo(groupUndo(grouped));
   return { groupsMade, tabsGrouped, total: groupable.length };
+}
+
+// "Group across all windows" mode: merge categories scattered over 2+ windows into the active
+// window, then group every window in place. One undo restores the original windows + groups.
+export async function groupAcrossWindows({ useAi } = {}) {
+  const settings = await loadSettings();
+  const domainIndex = await loadDomainIndex(settings.categories);
+  const wantAi = useAi === undefined ? settings.useAiByDefault : useAi;
+  const activeWindowId = (await chrome.windows.getCurrent()).id;
+  const usable = (await chrome.tabs.query({})).filter((t) => !t.pinned && t.id != null && /^https?:/.test(t.url || ''));
+
+  let aiCategories = null;
+  if (wantAi && (await aiAvailable())) {
+    const leftovers = usable.filter((t) => !categorize(t, settings.categories, domainIndex))
+      .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
+    aiCategories = await aiCategorize(leftovers, settings.categories);
+  }
+
+  // 1) Pull scattered-category tabs into the active window (don't group yet).
+  const { moves } = planGather(usable, {
+    activeWindowId, minGroupSize: settings.minGroupSize, categories: settings.categories, aiCategories, domainIndex,
+  });
+  for (const m of moves) await chrome.tabs.move(m.id, { windowId: activeWindowId, index: -1 });
+
+  // 2) Group every window in place — the active window now also holds the moved-in tabs.
+  const byWindow = new Map();
+  for (const t of await chrome.tabs.query({})) {
+    if (t.pinned || t.id == null) continue;
+    if (!byWindow.has(t.windowId)) byWindow.set(t.windowId, []);
+    byWindow.get(t.windowId).push(t);
+  }
+  const grouped = [];
+  let groupsMade = 0;
+  let tabsGrouped = 0;
+  for (const [, wtabs] of byWindow) {
+    const plan = planGroups(wtabs, {
+      minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories, domainIndex,
+    });
+    for (const g of plan) {
+      if (!g.ids.length) continue;
+      const groupId = await chrome.tabs.group({ tabIds: g.ids });
+      await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
+      grouped.push(...g.ids);
+      groupsMade += 1;
+      tabsGrouped += g.ids.length;
+    }
+  }
+  if (moves.length || grouped.length) await setUndo(gatherUndo(moves, grouped));
+  return { mode: 'cross', merged: moves.length, fromWindows: new Set(moves.map((m) => m.fromWindowId)).size, groupsMade, tabsGrouped };
 }
 
 // Cross-window "gather & group": pull tabs of any category that is scattered across 2+

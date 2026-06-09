@@ -46,6 +46,7 @@ async function init() {
   const settings = await loadSettings();
   $('#minGroupSize').value = settings.minGroupSize;
   $('#useAiByDefault').checked = settings.useAiByDefault;
+  $('#groupAcrossWindows').checked = settings.groupAcrossWindows;
   $('#autoGroupOnStartup').checked = settings.autoGroupOnStartup;
   $('#bookmarkParentId').value = settings.bookmarkParentId;
   renderCategories(settings.categories);
@@ -55,6 +56,7 @@ async function save() {
   await saveSettings({
     minGroupSize: $('#minGroupSize').value,
     useAiByDefault: $('#useAiByDefault').checked,
+    groupAcrossWindows: $('#groupAcrossWindows').checked,
     autoGroupOnStartup: $('#autoGroupOnStartup').checked,
     bookmarkParentId: $('#bookmarkParentId').value,
     categories: collectCategories(),
@@ -104,6 +106,7 @@ $('#reset').addEventListener('click', async () => {
   renderCategories(s.categories);
   $('#minGroupSize').value = s.minGroupSize;
   $('#useAiByDefault').checked = s.useAiByDefault;
+  $('#groupAcrossWindows').checked = s.groupAcrossWindows;
   $('#autoGroupOnStartup').checked = s.autoGroupOnStartup;
   flash('Reset to defaults ✓');
 });

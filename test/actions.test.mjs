@@ -105,6 +105,33 @@ test('gatherAndGroup pulls scattered tabs into the active window and undo sends 
   assert.equal(await winOf(3), 2, 'undo returned the tab to its original window');
 });
 
+test('groupTabs with groupAcrossWindows merges a split category and groups every window', async () => {
+  installMockChrome({ currentWindowId: 1, tabs: [
+    tab(1, 'https://ebay.com/a', { windowId: 1 }),   // shopping
+    tab(2, 'https://amazon.com/x', { windowId: 1 }), // shopping
+    tab(3, 'https://ebay.com/b', { windowId: 2 }),   // shopping, other window -> should merge in
+    tab(4, 'https://github.com/a', { windowId: 2 }), // dev, single-window -> stays/groups in window 2
+    tab(5, 'https://gitlab.com/a', { windowId: 2 }), // dev
+  ] });
+  await chrome.storage.sync.set({ settings: { groupAcrossWindows: true, useAiByDefault: false } });
+
+  const r = await groupTabs();
+  assert.equal(r.merged, 1, 'one shopping tab pulled from window 2');
+  assert.equal(await winOf(3), 1, 'eBay tab moved into the active window');
+  // The 3 shopping tabs share one group in window 1.
+  const all = await chrome.tabs.query({});
+  const shop = all.filter((t) => [1, 2, 3].includes(t.id)).map((t) => t.groupId);
+  assert.equal(new Set(shop).size, 1, 'all shopping tabs in a single group');
+  assert.notEqual(shop[0], -1);
+  // The dev tabs (only in window 2) still got grouped, in window 2.
+  const dev = all.filter((t) => [4, 5].includes(t.id));
+  assert.equal(new Set(dev.map((t) => t.groupId)).size, 1, 'dev tabs grouped together');
+  assert.equal(dev[0].windowId, 2, 'dev group stays in window 2');
+
+  await undoLast();
+  assert.equal(await winOf(3), 2, 'undo returns the merged tab to its window');
+});
+
 test('gatherAndGroup is a no-op when nothing is scattered across windows', async () => {
   installMockChrome({ currentWindowId: 1, tabs: [
     tab(1, 'https://github.com/a', { windowId: 1 }),

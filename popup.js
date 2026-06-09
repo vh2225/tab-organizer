@@ -9,7 +9,11 @@ const statusEl = $('#status');
 const UNDO_LABEL = { group: 'grouping', sort: 'sort', dedupe: 'duplicate close', ungroup: 'ungroup' };
 
 const MESSAGES = {
-  groupTabs: (r) => r.groupsMade ? `Grouped ${r.tabsGrouped} tabs into ${r.groupsMade} groups.` : 'Nothing to group (need 2+ related tabs).',
+  groupTabs: (r) => {
+    if (!r.groupsMade) return r.mode === 'cross' ? 'Nothing to group across your windows.' : 'Nothing to group (need 2+ related tabs).';
+    const base = `Grouped ${r.tabsGrouped} tabs into ${r.groupsMade} groups`;
+    return r.mode === 'cross' && r.merged ? `${base} (merged ${r.merged} from ${r.fromWindows} other window${r.fromWindows === 1 ? '' : 's'}).` : `${base}.`;
+  },
   gatherAndGroup: (r) => r.groupsMade
     ? `Merged ${r.merged} tab${r.merged === 1 ? '' : 's'} from ${r.fromWindows} other window${r.fromWindows === 1 ? '' : 's'} into ${r.groupsMade} group${r.groupsMade === 1 ? '' : 's'}.`
     : 'Nothing is scattered across windows.',

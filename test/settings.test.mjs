@@ -17,6 +17,11 @@ test('mergeSettings: clamps + coerces', () => {
   assert.equal(s.bookmarkParentId, '2'); // invalid -> Other Bookmarks
 });
 
+test('mergeSettings: groupAcrossWindows defaults false and coerces to bool', () => {
+  assert.equal(mergeSettings(null).groupAcrossWindows, false);
+  assert.equal(mergeSettings({ groupAcrossWindows: 'yes' }).groupAcrossWindows, true);
+});
+
 test('normalizeCategory: parses domains from string, validates color', () => {
   const c = normalizeCategory({ label: 'My Cat', color: 'neon', domains: 'a.com, b.com\nc.com', keywords: '' });
   assert.equal(c.color, 'grey'); // invalid color falls back

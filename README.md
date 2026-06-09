@@ -14,6 +14,8 @@ Gemini Nano) for tabs the rules don't recognize.
 - **Gather & group across windows** — when the same topic is scattered across several windows
   (e.g. an eBay tab here, another there), pulls just those into the active window and groups
   them. Topics that live in a single window are left exactly where they are. Undoable.
+  Prefer this as the default? Turn on **Group across all windows by default** in Settings and
+  the plain **Group tabs** button does it every time.
 - **Sort tabs** — reorders so related tabs sit next to each other (category → domain → title).
 - **Close duplicate tabs** — closes repeat URLs, keeps the first (ignores `#fragments`, never
   touches pinned tabs).
