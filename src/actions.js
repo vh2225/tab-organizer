@@ -2,24 +2,30 @@
 // keyboard command, or the context menu. All pure decision logic lives in
 // categorize.js; user config in settings.js.
 
-import { planGroups, findDuplicateTabIds, sortKey, categorize, categoryMeta, registrableDomain }
+import { planGroups, planGather, findDuplicateTabIds, sortKey, categorize, categoryMeta, registrableDomain }
   from './categorize.js';
 import { loadSettings } from './settings.js';
 import { aiAvailable, aiCategorize } from './ai.js';
+import { groupUndo, sortUndo, dedupeUndo, ungroupUndo, gatherUndo, setUndo, undoLast } from './undo.js';
+
+export { undoLast as undo };
 
 const currentWindowTabs = () => chrome.tabs.query({ currentWindow: true });
 
 // Group all tabs in the current window into native tab groups by smart category.
-export async function groupTabs({ useAi = false } = {}) {
+// `useAi` defaults to the user's setting (on-device AI runs when available; no-op otherwise),
+// so the keyboard shortcut / context menu / auto-group get the smart pass too.
+export async function groupTabs({ useAi } = {}) {
   const settings = await loadSettings();
+  const wantAi = useAi === undefined ? settings.useAiByDefault : useAi;
   const tabs = await currentWindowTabs();
   const groupable = tabs.filter((t) => !t.pinned && t.id != null);
 
   let aiCategories = null;
-  if (useAi && (await aiAvailable())) {
+  if (wantAi && (await aiAvailable())) {
     const leftovers = groupable.filter((t) => !categorize(t, settings.categories))
       .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
-    aiCategories = await aiCategorize(leftovers);
+    aiCategories = await aiCategorize(leftovers, settings.categories);
   }
 
   const plan = planGroups(groupable, {
@@ -27,21 +33,62 @@ export async function groupTabs({ useAi = false } = {}) {
   });
   let groupsMade = 0;
   let tabsGrouped = 0;
+  const grouped = [];
   for (const g of plan) {
     if (!g.ids.length) continue;
     const groupId = await chrome.tabs.group({ tabIds: g.ids });
     await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
     groupsMade += 1;
     tabsGrouped += g.ids.length;
+    grouped.push(...g.ids);
   }
+  if (grouped.length) await setUndo(groupUndo(grouped));
   return { groupsMade, tabsGrouped, total: groupable.length };
+}
+
+// Cross-window "gather & group": pull tabs of any category that is scattered across 2+
+// windows into the active window and group them. Single-window topics are left untouched.
+export async function gatherAndGroup({ useAi } = {}) {
+  const settings = await loadSettings();
+  const wantAi = useAi === undefined ? settings.useAiByDefault : useAi;
+  const activeWindowId = (await chrome.windows.getCurrent()).id;
+  const all = await chrome.tabs.query({});
+  const usable = all.filter((t) => !t.pinned && t.id != null && /^https?:/.test(t.url || ''));
+
+  let aiCategories = null;
+  if (wantAi && (await aiAvailable())) {
+    const leftovers = usable.filter((t) => !categorize(t, settings.categories))
+      .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
+    aiCategories = await aiCategorize(leftovers, settings.categories);
+  }
+
+  const { moves, groups } = planGather(usable, {
+    activeWindowId, minGroupSize: settings.minGroupSize, categories: settings.categories, aiCategories,
+  });
+  if (!groups.length) return { merged: 0, fromWindows: 0, groupsMade: 0 };
+
+  const groupedIds = groups.flatMap((g) => g.ids);
+  await setUndo(gatherUndo(moves, groupedIds));
+
+  const fromWindows = new Set(moves.map((m) => m.fromWindowId)).size;
+  for (const m of moves) await chrome.tabs.move(m.id, { windowId: activeWindowId, index: -1 });
+  for (const g of groups) {
+    const groupId = await chrome.tabs.group({ tabIds: g.ids });
+    await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
+  }
+  return { merged: moves.length, fromWindows, groupsMade: groups.length };
 }
 
 // Remove every tab group in the current window (tabs stay open).
 export async function ungroupAll() {
   const tabs = await currentWindowTabs();
-  const grouped = tabs.filter((t) => t.groupId != null && t.groupId !== -1).map((t) => t.id);
-  if (grouped.length) await chrome.tabs.ungroup(grouped);
+  const grouped = tabs.filter((t) => t.groupId != null && t.groupId !== -1);
+  if (grouped.length) {
+    const meta = {};
+    for (const g of await chrome.tabGroups.query({})) meta[g.id] = { title: g.title, color: g.color };
+    await setUndo(ungroupUndo(grouped.map((t) => ({ id: t.id, groupId: t.groupId })), meta));
+    await chrome.tabs.ungroup(grouped.map((t) => t.id));
+  }
   return { ungrouped: grouped.length };
 }
 
@@ -52,6 +99,7 @@ export async function sortTabs() {
   const movable = tabs.filter((t) => !t.pinned);
   const pinnedCount = tabs.length - movable.length;
   const ordered = [...movable].sort((a, b) => sortKey(a, settings.categories).localeCompare(sortKey(b, settings.categories)));
+  if (movable.length) await setUndo(sortUndo(movable));
   for (let i = 0; i < ordered.length; i += 1) {
     await chrome.tabs.move(ordered[i].id, { index: pinnedCount + i });
   }
@@ -63,7 +111,11 @@ export async function dedupeTabs() {
   const tabs = await currentWindowTabs();
   const candidates = tabs.filter((t) => !t.pinned);
   const dupes = findDuplicateTabIds(candidates);
-  if (dupes.length) await chrome.tabs.remove(dupes);
+  if (dupes.length) {
+    const dupeSet = new Set(dupes);
+    await setUndo(dedupeUndo(candidates.filter((t) => dupeSet.has(t.id))));
+    await chrome.tabs.remove(dupes);
+  }
   return { closed: dupes.length };
 }
 

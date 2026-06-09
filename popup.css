@@ -53,6 +53,8 @@ button:disabled { opacity: .5; cursor: default; }
 
 .toggle { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); margin-top: 4px; }
 .hint { color: var(--muted); font-size: 11px; margin: 4px 0 0; }
+.aiprogress { height: 6px; background: var(--hover); border-radius: 999px; overflow: hidden; margin: 6px 0 2px; }
+.aiprogress > span { display: block; height: 100%; width: 0; background: var(--accent); transition: width .2s ease; }
 #status { min-height: 16px; margin: 10px 0 0; font-size: 12px; color: var(--accent); }
 
 footer { display: flex; justify-content: space-between; align-items: center;

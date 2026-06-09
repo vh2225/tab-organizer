@@ -145,6 +145,37 @@ export function planGroups(tabs, { minGroupSize = 2, aiCategories = null, catego
   return groups.filter((g) => g.ids.length >= minGroupSize);
 }
 
+// Plan a cross-window "gather & group": find categories whose tabs are SCATTERED across
+// 2+ windows (and reach minGroupSize), and return the tabs to pull into the active window
+// plus the group each scattered category forms. Categories confined to one window are left
+// untouched, so intentional multi-window setups survive.
+//
+// Returns { moves: [{id, fromWindowId, fromIndex}], groups: [{label, color, ids}] }.
+// `moves` only contains tabs that live OUTSIDE the active window (captured for undo).
+export function planGather(tabs, { activeWindowId, minGroupSize = 2, categories = DEFAULT_CATEGORIES, aiCategories = null } = {}) {
+  const byCat = new Map(); // catId -> [tab, ...]
+  for (const tab of tabs) {
+    if (tab.pinned || tab.id == null) continue;
+    const id = categorize(tab, categories) || (aiCategories && aiCategories.get(tab.id)) || null;
+    if (!id || !categoryMeta(id, categories)) continue;
+    if (!byCat.has(id)) byCat.set(id, []);
+    byCat.get(id).push(tab);
+  }
+
+  const moves = [];
+  const groups = [];
+  for (const [id, items] of byCat) {
+    const windows = new Set(items.map((t) => t.windowId));
+    if (windows.size < 2 || items.length < minGroupSize) continue; // not scattered
+    const m = categoryMeta(id, categories);
+    groups.push({ label: `${m.emoji} ${m.label}`, color: m.color, ids: items.map((t) => t.id) });
+    for (const tab of items) {
+      if (tab.windowId !== activeWindowId) moves.push({ id: tab.id, fromWindowId: tab.windowId, fromIndex: tab.index });
+    }
+  }
+  return { moves, groups };
+}
+
 // Tab ids that are duplicates (2nd+ occurrence of the same normalized URL).
 export function findDuplicateTabIds(tabs) {
   const seen = new Set();

@@ -11,7 +11,7 @@ To organize your tabs and bookmarks, the extension reads:
 
 - **Open tabs** in the current window (URL and title) — to group, sort, and de-duplicate them.
 - **Bookmarks** — to file loose bookmarks into folders and save sessions.
-- **Local extension storage** — to remember your settings, custom categories, and license tier
+- **Local extension storage** — to remember your settings and custom categories
   (stored via `chrome.storage.sync`, which Chrome may sync across your own signed-in devices).
 
 ## What we do with it
@@ -45,4 +45,5 @@ processing of any kind.
 
 ## Contact
 
-Questions: <your-email@example.com>  ·  Replace this before publishing.
+Questions or issues: please open an issue on the project's GitHub repository
+(`https://github.com/<your-org>/tab-organizer/issues`). No personal contact required.

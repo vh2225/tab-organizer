@@ -7,7 +7,8 @@ import { DEFAULT_CATEGORIES } from './categorize.js';
 export const DEFAULT_SETTINGS = {
   categories: DEFAULT_CATEGORIES,
   minGroupSize: 2,
-  useAiByDefault: false,
+  useAiByDefault: true, // on-device AI runs when available; silent no-op when not
+
   autoGroupOnStartup: false,
   bookmarkParentId: '2', // '2' = Other Bookmarks, '1' = Bookmarks Bar
 };

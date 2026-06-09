@@ -11,12 +11,17 @@ Gemini Nano) for tabs the rules don't recognize.
 - **Group tabs by topic** — collects open tabs into native Chrome tab groups (Dev, AI, Email,
   Social, Media, News, Shopping, Finance, Travel, Docs, Work…), each color-coded. Unknown sites
   are grouped by domain. Pinned tabs are left alone.
+- **Gather & group across windows** — when the same topic is scattered across several windows
+  (e.g. an eBay tab here, another there), pulls just those into the active window and groups
+  them. Topics that live in a single window are left exactly where they are. Undoable.
 - **Sort tabs** — reorders so related tabs sit next to each other (category → domain → title).
 - **Close duplicate tabs** — closes repeat URLs, keeps the first (ignores `#fragments`, never
   touches pinned tabs).
 - **Save session** — saves every tab in the window to a dated bookmark folder under
   *Other Bookmarks → Tab Organizer Sessions*.
 - **Ungroup all** — clears groups without closing anything.
+- **Undo last action** — reverses the most recent group / sort / close-duplicates / ungroup
+  (re-opens closed tabs, restores order, rebuilds groups). One step back, no surprises.
 
 **Bookmarks**
 - **File loose bookmarks into folders** — sorts the loose bookmarks in *Other Bookmarks* into
@@ -35,10 +40,12 @@ Bonus: keyboard shortcut **Ctrl/Cmd+Shift+O** and a right-click menu both trigge
 ## Optional: on-device AI
 
 The "Use on-device AI for unknown tabs" toggle uses Chrome's built-in Prompt API (Gemini Nano),
-which runs **locally and free**. It only activates if your Chrome has the model available; if not,
-the toggle shows *(unavailable)* and everything still works via the heuristic rules. To enable the
-model: recent Chrome, then check `chrome://on-device-internals`. The extension never sends your
-tabs anywhere — all categorization is local either way.
+which runs **locally and free**. It's **on by default** and runs whenever the model is available
+— this is what catches sites the rules don't list (e.g. a deals site → Shopping) without any
+hardcoding. If the model isn't available the toggle shows *(unavailable)* and everything still
+works via the heuristic rules. To enable the model: recent desktop Chrome, then check
+`chrome://on-device-internals`. The extension never sends your tabs anywhere — all categorization
+is local either way.
 
 ## Customize categories
 
@@ -63,8 +70,12 @@ Pure logic (categorization, grouping plan, dedupe) is isolated in `src/categoriz
 `chrome.*` calls, so it's unit-tested in Node:
 
 ```bash
-node --test        # runs test/categorize.test.mjs
+node --test        # categorize, settings, undo (pure) + actions (mock-chrome) + smoke
 ```
+
+The `chrome.*` orchestration in `actions.js` is also covered, driven by an in-memory mock
+`chrome` (`test/mock-chrome.mjs`), and a smoke test imports every `src/` module so a broken
+import can't silently take down the service worker.
 
 ## Layout
 
@@ -76,7 +87,8 @@ node --test        # runs test/categorize.test.mjs
 | `src/ai.js` | Optional on-device Prompt API pass (best-effort, graceful fallback) |
 | `src/actions.js` | `chrome.*` orchestration for each action |
 | `popup.html/.css/.js` | The toolbar popup UI |
-| `options.html/.css/.js` | Settings: editable categories, preferences, license |
-| `background.js` | Service worker: command, context menu, onboarding, Pro auto-group |
+| `options.html/.css/.js` | Settings: editable categories and preferences |
+| `src/undo.js` | Undo records for the destructive tab actions (pure builders unit-tested) |
+| `background.js` | Service worker: command, context menu, onboarding, auto-group |
 | `store/` | Web Store listing copy + privacy policy |
 | `test/` | Node unit tests for the pure logic |

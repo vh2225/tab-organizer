@@ -14,6 +14,7 @@
   <section>
     <h2>Tabs</h2>
     <button class="primary" data-action="groupTabs">📁 Group tabs by topic</button>
+    <button data-action="gatherAndGroup">🪟 Gather &amp; group across windows</button>
     <button data-action="sortTabs">↕️ Sort tabs (related together)</button>
     <button data-action="dedupeTabs">🧹 Close duplicate tabs</button>
     <button data-action="saveSession">💾 Save all tabs as a session</button>
@@ -22,6 +23,8 @@
       <input type="checkbox" id="useAi" /> Use on-device AI for unknown tabs
       <span id="aiStatus" class="hint"></span>
     </label>
+    <button id="aiDownloadBtn" class="ghost hidden">⬇️ Download on-device AI model</button>
+    <div id="aiProgress" class="aiprogress hidden"><span id="aiProgressBar"></span></div>
   </section>
 
   <section>
@@ -29,6 +32,8 @@
     <button data-action="organizeBookmarks">🗂️ File loose bookmarks into folders</button>
     <p class="hint">Sorts loose bookmarks into category folders and removes exact duplicates. Existing folders are left alone.</p>
   </section>
+
+  <button class="ghost" id="undoBtn" data-action="undo" disabled>↩︎ Undo last action</button>
 
   <p id="status" role="status"></p>
 

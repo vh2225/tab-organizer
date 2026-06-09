@@ -1,3 +1,19 @@
 node_modules/
 *.log
 .DS_Store
+
+# Editors / IDEs / tooling
+.idea
+.vscode
+.claude
+
+# Sandbox-mounted home configs that surface in this dir (not part of the project)
+.bashrc
+.bash_profile
+.profile
+.zshrc
+.zprofile
+.gitconfig
+.ripgreprc
+.mcp.json
+.gitmodules

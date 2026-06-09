@@ -1,5 +1,5 @@
 // Service worker: keyboard command, right-click menu, first-run onboarding, and
-// the Pro "auto-group on startup / new window" automation.
+// the optional "auto-group on startup / new window" automation.
 import { groupTabs, maybeAutoGroup } from './src/actions.js';
 
 chrome.runtime.onInstalled.addListener((details) => {
@@ -22,6 +22,6 @@ chrome.commands.onCommand.addListener((command) => {
   if (command === 'group-tabs') groupTabs();
 });
 
-// Pro automation — only fires if enabled in settings AND the user is Pro (gated inside).
+// Optional automation — only fires when "auto-group on startup" is enabled in settings.
 chrome.runtime.onStartup.addListener(() => { maybeAutoGroup(); });
 chrome.windows.onCreated.addListener(() => { maybeAutoGroup(); });
