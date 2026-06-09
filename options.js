@@ -48,7 +48,6 @@ async function init() {
   $('#useAiByDefault').checked = settings.useAiByDefault;
   $('#groupAcrossWindows').checked = settings.groupAcrossWindows;
   $('#autoGroupOnStartup').checked = settings.autoGroupOnStartup;
-  $('#bookmarkParentId').value = settings.bookmarkParentId;
   renderCategories(settings.categories);
 }
 
@@ -58,7 +57,6 @@ async function save() {
     useAiByDefault: $('#useAiByDefault').checked,
     groupAcrossWindows: $('#groupAcrossWindows').checked,
     autoGroupOnStartup: $('#autoGroupOnStartup').checked,
-    bookmarkParentId: $('#bookmarkParentId').value,
     categories: collectCategories(),
   });
   flash('Saved ✓');

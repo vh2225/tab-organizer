@@ -10,7 +10,6 @@ export const DEFAULT_SETTINGS = {
   useAiByDefault: true, // on-device AI runs when available; silent no-op when not
   groupAcrossWindows: false, // when true, "Group tabs" merges split categories across all windows
   autoGroupOnStartup: false,
-  bookmarkParentId: '2', // '2' = Other Bookmarks, '1' = Bookmarks Bar
 };
 
 const KEY = 'settings';
@@ -37,7 +36,6 @@ export function mergeSettings(stored, defaults = DEFAULT_SETTINGS) {
   s.useAiByDefault = !!s.useAiByDefault;
   s.groupAcrossWindows = !!s.groupAcrossWindows;
   s.autoGroupOnStartup = !!s.autoGroupOnStartup;
-  s.bookmarkParentId = s.bookmarkParentId === '1' ? '1' : '2';
   s.categories = Array.isArray(s.categories) && s.categories.length
     ? s.categories.map(normalizeCategory).filter((c) => c.id)
     : defaults.categories;

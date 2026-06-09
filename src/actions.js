@@ -2,8 +2,7 @@
 // keyboard command, or the context menu. All pure decision logic lives in
 // categorize.js; user config in settings.js.
 
-import { planGroups, planGather, findDuplicateTabIds, sortKey, categorize, categoryMeta, registrableDomain }
-  from './categorize.js';
+import { planGroups, planGather, findDuplicateTabIds, sortKey, categorize } from './categorize.js';
 import { loadSettings } from './settings.js';
 import { loadDomainIndex } from './dataset.js';
 import { aiAvailable, aiCategorize } from './ai.js';
@@ -163,41 +162,6 @@ export async function saveSession() {
   return { saved: saveable.length, folder: folder.title };
 }
 
-// File loose bookmarks in a target folder into category subfolders + drop dup URLs.
-export async function organizeBookmarks({ parentId } = {}) {
-  const settings = await loadSettings();
-  const domainIndex = await loadDomainIndex(settings.categories);
-  const target = parentId || settings.bookmarkParentId || '2';
-  const folderCache = new Map(); // normalized folder key -> canonical folder node
-
-  // 1) Merge duplicate same-name folders into one (the bookmarks analog of consolidating
-  //    duplicate tab groups). Matches by name ignoring a leading emoji, so "🛒 Shopping" and
-  //    a user's "Shopping" fold together.
-  const { mergedFolders, deduped: mergeDeduped } = await mergeDuplicateFolders(target, folderCache);
-
-  // 2) File loose bookmarks into category folders + drop duplicate URLs among them.
-  const loose = (await chrome.bookmarks.getChildren(target)).filter((c) => c.url);
-  const seen = new Set();
-  let filed = 0;
-  let deduped = mergeDeduped;
-
-  for (const bm of loose) {
-    const norm = normBookmarkUrl(bm.url);
-    if (norm && seen.has(norm)) { await chrome.bookmarks.remove(bm.id); deduped += 1; continue; }
-    if (norm) seen.add(norm);
-
-    const catId = categorize(bm, settings.categories, domainIndex);
-    let label;
-    if (catId) { const m = categoryMeta(catId, settings.categories); label = `${m.emoji} ${m.label}`; }
-    else { const dom = registrableDomain(bm.url); label = dom ? `🔖 ${dom}` : '🔖 Other'; }
-
-    const folder = await folderForLabel(target, label, folderCache);
-    await chrome.bookmarks.move(bm.id, { parentId: folder.id });
-    filed += 1;
-  }
-  return { filed, deduped, mergedFolders };
-}
-
 // Auto-group on startup / new window (called by background.js when enabled in settings).
 export async function maybeAutoGroup() {
   const settings = await loadSettings();
@@ -210,55 +174,4 @@ async function ensureFolder(title, parentId) {
   const existing = children.find((c) => !c.url && c.title === title);
   if (existing) return existing;
   return chrome.bookmarks.create({ parentId, title });
-}
-
-// Folder identity for merging: name minus a leading emoji/symbol prefix, trimmed + lowercased.
-const FOLDER_PREFIX = /^(?:\p{Extended_Pictographic}|[\u{1F3FB}-\u{1F3FF}]|‍|️)+\s*/u;
-const folderKey = (title) => String(title || '').replace(FOLDER_PREFIX, '').trim().toLowerCase();
-const normBookmarkUrl = (url) => (url || '').replace(/#.*$/, '').replace(/\/$/, '');
-
-// Find (or create) the folder for a category label under parentId, matching existing folders by
-// folderKey so "Shopping" and "🛒 Shopping" resolve to the same folder. Cached by key.
-async function folderForLabel(parentId, label, cache) {
-  const key = folderKey(label);
-  if (cache.has(key)) return cache.get(key);
-  const children = await chrome.bookmarks.getChildren(parentId);
-  const existing = children.find((c) => !c.url && folderKey(c.title) === key);
-  const folder = existing || (await chrome.bookmarks.create({ parentId, title: label }));
-  cache.set(key, folder);
-  return folder;
-}
-
-// Merge folders under parentId that share a folderKey: move children into the first such folder
-// (the canonical one), dropping duplicate URLs, then remove the now-empty duplicates. Seeds the
-// cache so subsequent filing reuses the canonical folders. Returns counts.
-async function mergeDuplicateFolders(parentId, cache) {
-  const folders = (await chrome.bookmarks.getChildren(parentId)).filter((c) => !c.url);
-  const seenUrls = new Map(); // key -> Set of normalized urls already in the canonical folder
-  let mergedFolders = 0;
-  let deduped = 0;
-
-  for (const f of folders) {
-    const key = folderKey(f.title);
-    if (!cache.has(key)) {
-      cache.set(key, f);
-      const urls = new Set();
-      for (const k of await chrome.bookmarks.getChildren(f.id)) if (k.url) urls.add(normBookmarkUrl(k.url));
-      seenUrls.set(key, urls);
-      continue;
-    }
-    const canonical = cache.get(key);
-    const urls = seenUrls.get(key);
-    for (const k of await chrome.bookmarks.getChildren(f.id)) {
-      if (k.url) {
-        const n = normBookmarkUrl(k.url);
-        if (urls.has(n)) { await chrome.bookmarks.remove(k.id); deduped += 1; continue; }
-        urls.add(n);
-      }
-      await chrome.bookmarks.move(k.id, { parentId: canonical.id });
-    }
-    await chrome.bookmarks.remove(f.id); // now empty
-    mergedFolders += 1;
-  }
-  return { mergedFolders, deduped };
 }

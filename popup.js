@@ -18,13 +18,6 @@ const MESSAGES = {
   sortTabs: (r) => `Sorted ${r.sorted} tabs.`,
   dedupeTabs: (r) => r.closed ? `Closed ${r.closed} duplicate tabs.` : 'No duplicates found.',
   saveSession: (r) => `Saved ${r.saved} tabs to “${r.folder}”.`,
-  organizeBookmarks: (r) => {
-    const parts = [];
-    if (r.filed) parts.push(`filed ${r.filed} bookmark${r.filed === 1 ? '' : 's'}`);
-    if (r.mergedFolders) parts.push(`merged ${r.mergedFolders} folder${r.mergedFolders === 1 ? '' : 's'}`);
-    if (r.deduped) parts.push(`removed ${r.deduped} duplicate${r.deduped === 1 ? '' : 's'}`);
-    return parts.length ? `Bookmarks: ${parts.join(', ')}.` : 'Bookmarks already tidy.';
-  },
   undo: (r) => r.undone ? `Undid the last ${UNDO_LABEL[r.action] || 'action'}.` : 'Nothing to undo.',
 };
 
@@ -36,7 +29,7 @@ async function run(name) {
     const opts = name === 'groupTabs' ? { useAi: $('#useAi').checked } : {};
     const result = await actions[name](opts);
     statusEl.textContent = MESSAGES[name] ? MESSAGES[name](result) : 'Done.';
-    if (name !== 'organizeBookmarks') refreshSummary();
+    refreshSummary();
   } catch (err) {
     statusEl.textContent = `Error: ${err.message}`;
   } finally {

@@ -28,7 +28,6 @@ machine.** Optional smart categorization uses Chrome's **built-in on-device AI**
 • Close duplicate tabs (keeps the first, skips pinned)
 • Undo the last action — reopens closed tabs, restores order, rebuilds groups
 • Save all tabs as a dated bookmark "session"
-• File loose bookmarks into category folders, merge duplicate folders + remove duplicate bookmarks
 • Fully customizable categories — make it match how *you* browse
 • On-device AI grouping for sites the rules don't recognize (optional, 100% local)
 • Auto-group on startup and every new window — set it and forget it
@@ -40,7 +39,6 @@ No tracking. No ads. No account. No paid tiers. Just a tidy browser.
 1. A messy window → after "Group tabs by topic" (color-coded groups). The hero shot.
 2. The popup UI (the action buttons + Undo).
 3. The Options page with the editable Categories list.
-4. Bookmarks before/after "File loose bookmarks into folders".
 5. The privacy angle as a graphic: "Your tabs never leave your browser."
 
 ## Required for submission

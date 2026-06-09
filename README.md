@@ -24,12 +24,6 @@ Gemini Nano) for tabs the rules don't recognize.
 - **Undo last action** — reverses the most recent group / sort / close-duplicates / ungroup
   (re-opens closed tabs, restores order, rebuilds groups). One step back, no surprises.
 
-**Bookmarks**
-- **File loose bookmarks into folders** — sorts the loose bookmarks in *Other Bookmarks* into
-  category folders, **merges duplicate same-name folders into one** (names match even when one
-  has an emoji prefix, e.g. a user's "Shopping" folds into "🛒 Shopping"), and removes
-  exact-duplicate URLs.
-
 Bonus: keyboard shortcut **Ctrl/Cmd+Shift+O** and a right-click menu both trigger
 "Group tabs by topic".
 

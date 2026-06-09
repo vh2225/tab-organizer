@@ -11,10 +11,9 @@ test('mergeSettings: empty -> defaults', () => {
 });
 
 test('mergeSettings: clamps + coerces', () => {
-  const s = mergeSettings({ minGroupSize: 999, useAiByDefault: 'yes', bookmarkParentId: 'x' });
+  const s = mergeSettings({ minGroupSize: 999, useAiByDefault: 'yes' });
   assert.equal(s.minGroupSize, 20);
   assert.equal(s.useAiByDefault, true);
-  assert.equal(s.bookmarkParentId, '2'); // invalid -> Other Bookmarks
 });
 
 test('mergeSettings: groupAcrossWindows defaults false and coerces to bool', () => {
