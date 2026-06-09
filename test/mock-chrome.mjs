@@ -45,7 +45,14 @@ export function installMockChrome({ tabs = [], bookmarks = [], currentWindowId =
     group: async ({ tabIds, groupId }) => {
       const gid = groupId != null ? groupId : nextGroupId++;
       let win;
-      for (const id of tabIds) { const f = findTab(id); if (f) { f.tab.groupId = gid; win = f.windowId; } }
+      for (const id of tabIds) {
+        const f = findTab(id);
+        if (!f) continue;
+        // Matches Chrome: a brand-new group only picks up tabs that aren't already grouped.
+        if (groupId == null && f.tab.groupId !== -1) continue;
+        f.tab.groupId = gid;
+        win = f.windowId;
+      }
       if (groupId == null && win != null) groups[gid] = { ...(groups[gid] || {}), windowId: win };
       return gid;
     },
@@ -55,6 +62,7 @@ export function installMockChrome({ tabs = [], bookmarks = [], currentWindowId =
     move: async (id, { index, windowId }) => {
       const f = findTab(id);
       if (!f) return;
+      if (windowId != null && windowId !== f.windowId) f.tab.groupId = -1; // leaving a window ungroups it
       f.arr.splice(f.i, 1);
       const dest = winArr(windowId ?? f.windowId);
       if (index == null || index < 0 || index > dest.length) dest.push(f.tab);

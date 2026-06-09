@@ -13,18 +13,12 @@ export { undoLast as undo };
 
 const currentWindowTabs = () => chrome.tabs.query({ currentWindow: true });
 
-// Put tabIds into the category's group, reusing an existing same-title group in that window
-// rather than always creating a new one — so re-running grouping merges instead of spawning
-// duplicate "Shopping" groups. Returns the group id.
-async function applyGroup(tabIds, label, color, windowId) {
-  const existing = await chrome.tabGroups.query({ windowId, title: label });
-  if (existing.length) {
-    await chrome.tabs.group({ groupId: existing[0].id, tabIds });
-    return existing[0].id;
-  }
-  const groupId = await chrome.tabs.group({ tabIds });
-  await chrome.tabGroups.update(groupId, { title: label, color });
-  return groupId;
+// Ungroup the given tabs so grouping starts from a clean slate. Chrome's tabs.group won't pull
+// already-grouped tabs into a new group, so without this a re-group leaves the old group and
+// spawns a duplicate (two "Shopping" groups). Clearing first guarantees one group per category.
+async function ungroupFirst(tabs) {
+  const ids = tabs.filter((t) => t.groupId != null && t.groupId !== -1).map((t) => t.id);
+  if (ids.length) await chrome.tabs.ungroup(ids);
 }
 
 // Group all tabs in the current window into native tab groups by smart category.
@@ -45,7 +39,7 @@ export async function groupTabs({ useAi } = {}) {
     aiCategories = await aiCategorize(leftovers, settings.categories);
   }
 
-  const windowId = (await chrome.windows.getCurrent()).id;
+  await ungroupFirst(groupable);
   const plan = planGroups(groupable, {
     minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories, domainIndex,
   });
@@ -54,7 +48,8 @@ export async function groupTabs({ useAi } = {}) {
   const grouped = [];
   for (const g of plan) {
     if (!g.ids.length) continue;
-    await applyGroup(g.ids, g.label, g.color, windowId);
+    const groupId = await chrome.tabs.group({ tabIds: g.ids });
+    await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
     groupsMade += 1;
     tabsGrouped += g.ids.length;
     grouped.push(...g.ids);
@@ -85,7 +80,9 @@ export async function groupAcrossWindows({ useAi } = {}) {
   });
   for (const m of moves) await chrome.tabs.move(m.id, { windowId: activeWindowId, index: -1 });
 
-  // 2) Group every window in place — the active window now also holds the moved-in tabs.
+  // 2) Clean slate, then group every window in place — the active window now holds the moved-in tabs.
+  const afterMove = await chrome.tabs.query({});
+  await ungroupFirst(afterMove.filter((t) => !t.pinned && t.id != null));
   const byWindow = new Map();
   for (const t of await chrome.tabs.query({})) {
     if (t.pinned || t.id == null) continue;
@@ -95,13 +92,14 @@ export async function groupAcrossWindows({ useAi } = {}) {
   const grouped = [];
   let groupsMade = 0;
   let tabsGrouped = 0;
-  for (const [windowId, wtabs] of byWindow) {
+  for (const [, wtabs] of byWindow) {
     const plan = planGroups(wtabs, {
       minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories, domainIndex,
     });
     for (const g of plan) {
       if (!g.ids.length) continue;
-      await applyGroup(g.ids, g.label, g.color, windowId);
+      const groupId = await chrome.tabs.group({ tabIds: g.ids });
+      await chrome.tabGroups.update(groupId, { title: g.label, color: g.color });
       grouped.push(...g.ids);
       groupsMade += 1;
       tabsGrouped += g.ids.length;
