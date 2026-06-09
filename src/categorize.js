@@ -74,11 +74,19 @@ export function registrableDomain(url) {
 
 // Returns a category id, or null when nothing matches (-> domain fallback).
 // Accepts anything shaped like { url, title } — works for tabs AND bookmarks.
-export function categorize(item, categories = DEFAULT_CATEGORIES) {
+// `domainIndex` (optional Map<host|registrableDomain, catId>) is the data-driven dataset:
+// an exact host/registrable lookup, tried first, so coverage can grow without code changes.
+export function categorize(item, categories = DEFAULT_CATEGORIES, domainIndex = null) {
   const url = (item.url || item.pendingUrl || '').toLowerCase();
   if (!url || url.startsWith('chrome:') || url.startsWith('edge:') || url.startsWith('about:')) return null;
   const host = hostnameOf(url);
   const title = (item.title || '').toLowerCase();
+
+  // 0) Dataset: exact host, then registrable domain. Ignored if the category was removed.
+  if (domainIndex) {
+    const hit = domainIndex.get(host) || domainIndex.get(registrableDomain(url));
+    if (hit && categoryMeta(hit, categories)) return hit;
+  }
 
   // 1) Domain match is the strongest signal.
   for (const c of categories) {
@@ -105,7 +113,7 @@ export function normalizeUrl(url) {
 // Returns [{ key, label, color, ids:[tabId,...] }], only for groups >= minGroupSize.
 // aiCategories (Map<tabId, categoryId>) folds in on-device AI for items the heuristics
 // could not place; it never overrides a confident match.
-export function planGroups(tabs, { minGroupSize = 2, aiCategories = null, categories = DEFAULT_CATEGORIES } = {}) {
+export function planGroups(tabs, { minGroupSize = 2, aiCategories = null, categories = DEFAULT_CATEGORIES, domainIndex = null } = {}) {
   const byCat = new Map();
   const uncategorized = [];
 
@@ -118,7 +126,7 @@ export function planGroups(tabs, { minGroupSize = 2, aiCategories = null, catego
   };
 
   for (const t of tabs) {
-    const id = categorize(t, categories);
+    const id = categorize(t, categories, domainIndex);
     if (id) place(t, id);
     else uncategorized.push(t);
   }
@@ -152,11 +160,11 @@ export function planGroups(tabs, { minGroupSize = 2, aiCategories = null, catego
 //
 // Returns { moves: [{id, fromWindowId, fromIndex}], groups: [{label, color, ids}] }.
 // `moves` only contains tabs that live OUTSIDE the active window (captured for undo).
-export function planGather(tabs, { activeWindowId, minGroupSize = 2, categories = DEFAULT_CATEGORIES, aiCategories = null } = {}) {
+export function planGather(tabs, { activeWindowId, minGroupSize = 2, categories = DEFAULT_CATEGORIES, aiCategories = null, domainIndex = null } = {}) {
   const byCat = new Map(); // catId -> [tab, ...]
   for (const tab of tabs) {
     if (tab.pinned || tab.id == null) continue;
-    const id = categorize(tab, categories) || (aiCategories && aiCategories.get(tab.id)) || null;
+    const id = categorize(tab, categories, domainIndex) || (aiCategories && aiCategories.get(tab.id)) || null;
     if (!id || !categoryMeta(id, categories)) continue;
     if (!byCat.has(id)) byCat.set(id, []);
     byCat.get(id).push(tab);
@@ -190,8 +198,8 @@ export function findDuplicateTabIds(tabs) {
 }
 
 // A stable sort key so related tabs end up adjacent: category order, then domain, then title.
-export function sortKey(tab, categories = DEFAULT_CATEGORIES) {
-  const id = categorize(tab, categories);
+export function sortKey(tab, categories = DEFAULT_CATEGORIES, domainIndex = null) {
+  const id = categorize(tab, categories, domainIndex);
   const catIndex = id ? categories.findIndex((c) => c.id === id) : categories.length;
   const dom = registrableDomain(tab.url || tab.pendingUrl || '');
   return `${String(catIndex).padStart(2, '0')}|${dom}|${(tab.title || '').toLowerCase()}`;

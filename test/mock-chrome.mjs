@@ -123,7 +123,9 @@ export function installMockChrome({ tabs = [], bookmarks = [], currentWindowId =
     tabGroups: tabGroupsApi,
     windows: windowsApi,
     bookmarks: bookmarksApi,
-    storage: { sync: mkStore(), session: mkStore() },
+    // Non-fetchable URL -> loadShipped() falls back to {} (no network in tests).
+    runtime: { getURL: (p) => `chrome-extension://test/${p}` },
+    storage: { sync: mkStore(), session: mkStore(), local: mkStore() },
   };
   return state;
 }

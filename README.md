@@ -47,6 +47,21 @@ works via the heuristic rules. To enable the model: recent desktop Chrome, then 
 `chrome://on-device-internals`. The extension never sends your tabs anywhere — all categorization
 is local either way.
 
+## Self-updating domain list
+
+Which sites belong to which category lives in a **maintained dataset** (`data/domains.json`),
+not buried in code. The extension ships that list and **refreshes it weekly** from this repo
+(`raw.githubusercontent.com/.../data/domains.json`), so coverage keeps improving without a new
+release — a deals site you hit today gets recognized after the next refresh. There's also an
+**Update now** button in Settings.
+
+This is a *download only*: the extension fetches a public file and **never uploads** anything
+about you — the privacy promise holds. If the network is down or the fetch fails, it falls back
+to the shipped baseline, so categorization always works offline.
+
+Maintainers regenerate the dataset with `node scripts/build-dataset.mjs`, which merges the code
+defaults + `data/curated.json` (+ a pluggable hook for public lists) into `data/domains.json`.
+
 ## Customize categories
 
 No code needed — open **Settings** (popup → ⚙️, or the Options page) and edit the **Categories**
@@ -83,6 +98,10 @@ import can't silently take down the service worker.
 | --- | --- |
 | `manifest.json` | MV3 manifest (permissions, action, options, command) |
 | `src/categorize.js` | Pure categorization + grouping/dedupe/sort logic (unit-tested) |
+| `src/dataset.js` | Domain dataset: validate/merge/build-index (pure) + fetch/cache refresh |
+| `data/domains.json` | Shipped + remotely-refreshed domain→category list (generated) |
+| `data/curated.json` | Hand-maintained domain additions (input to the build script) |
+| `scripts/build-dataset.mjs` | Regenerates `data/domains.json` from defaults + curated |
 | `src/settings.js` | User settings + custom categories (chrome.storage; pure merge helpers tested) |
 | `src/ai.js` | Optional on-device Prompt API pass (best-effort, graceful fallback) |
 | `src/actions.js` | `chrome.*` orchestration for each action |

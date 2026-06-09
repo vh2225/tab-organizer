@@ -22,6 +22,11 @@ All processing happens **locally, inside your browser**. The extension:
 - Has **no analytics, no tracking, and no third-party scripts.**
 - Requires **no account and no sign-in.**
 
+The only network request the extension makes is to **download** a public category list
+(a domain→category mapping it ships with and refreshes weekly from its own GitHub repo).
+This is a one-way download of a public file — it carries **no information about you** and
+contains nothing about your tabs or browsing.
+
 ## On-device AI (optional)
 
 If you enable "Use on-device AI for unknown tabs," categorization uses Chrome's **built-in,
@@ -46,4 +51,4 @@ processing of any kind.
 ## Contact
 
 Questions or issues: please open an issue on the project's GitHub repository
-(`https://github.com/<your-org>/tab-organizer/issues`). No personal contact required.
+(`https://github.com/vh2225/tab-organizer/issues`). No personal contact required.

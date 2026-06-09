@@ -48,7 +48,7 @@ No tracking. No ads. No account. No paid tiers. Just a tidy browser.
 - [ ] 128×128 icon (included: `icons/icon128.png`)
 - [ ] At least 1 screenshot (1280×800 or 640×400)
 - [ ] Justify each permission in the listing's privacy tab (see PRIVACY.md table)
-- [ ] Set the GitHub repo URL in PRIVACY.md's contact line (`<your-org>` placeholder)
+- [ ] Justify the `alarms` + `raw.githubusercontent.com` host permission (downloads the public category list)
 
 This is a **free** extension — no payment integration, no paid tiers. Source is MIT-licensed
 (see `LICENSE`), so it can also live on GitHub for issues/contributions.

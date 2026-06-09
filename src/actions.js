@@ -5,6 +5,7 @@
 import { planGroups, planGather, findDuplicateTabIds, sortKey, categorize, categoryMeta, registrableDomain }
   from './categorize.js';
 import { loadSettings } from './settings.js';
+import { loadDomainIndex } from './dataset.js';
 import { aiAvailable, aiCategorize } from './ai.js';
 import { groupUndo, sortUndo, dedupeUndo, ungroupUndo, gatherUndo, setUndo, undoLast } from './undo.js';
 
@@ -17,19 +18,20 @@ const currentWindowTabs = () => chrome.tabs.query({ currentWindow: true });
 // so the keyboard shortcut / context menu / auto-group get the smart pass too.
 export async function groupTabs({ useAi } = {}) {
   const settings = await loadSettings();
+  const domainIndex = await loadDomainIndex(settings.categories);
   const wantAi = useAi === undefined ? settings.useAiByDefault : useAi;
   const tabs = await currentWindowTabs();
   const groupable = tabs.filter((t) => !t.pinned && t.id != null);
 
   let aiCategories = null;
   if (wantAi && (await aiAvailable())) {
-    const leftovers = groupable.filter((t) => !categorize(t, settings.categories))
+    const leftovers = groupable.filter((t) => !categorize(t, settings.categories, domainIndex))
       .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
     aiCategories = await aiCategorize(leftovers, settings.categories);
   }
 
   const plan = planGroups(groupable, {
-    minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories,
+    minGroupSize: settings.minGroupSize, aiCategories, categories: settings.categories, domainIndex,
   });
   let groupsMade = 0;
   let tabsGrouped = 0;
@@ -50,6 +52,7 @@ export async function groupTabs({ useAi } = {}) {
 // windows into the active window and group them. Single-window topics are left untouched.
 export async function gatherAndGroup({ useAi } = {}) {
   const settings = await loadSettings();
+  const domainIndex = await loadDomainIndex(settings.categories);
   const wantAi = useAi === undefined ? settings.useAiByDefault : useAi;
   const activeWindowId = (await chrome.windows.getCurrent()).id;
   const all = await chrome.tabs.query({});
@@ -57,13 +60,13 @@ export async function gatherAndGroup({ useAi } = {}) {
 
   let aiCategories = null;
   if (wantAi && (await aiAvailable())) {
-    const leftovers = usable.filter((t) => !categorize(t, settings.categories))
+    const leftovers = usable.filter((t) => !categorize(t, settings.categories, domainIndex))
       .map((t) => ({ id: t.id, url: t.url || '', title: t.title || '' }));
     aiCategories = await aiCategorize(leftovers, settings.categories);
   }
 
   const { moves, groups } = planGather(usable, {
-    activeWindowId, minGroupSize: settings.minGroupSize, categories: settings.categories, aiCategories,
+    activeWindowId, minGroupSize: settings.minGroupSize, categories: settings.categories, aiCategories, domainIndex,
   });
   if (!groups.length) return { merged: 0, fromWindows: 0, groupsMade: 0 };
 
@@ -95,10 +98,11 @@ export async function ungroupAll() {
 // Reorder tabs so related ones are adjacent (category -> domain -> title).
 export async function sortTabs() {
   const settings = await loadSettings();
+  const domainIndex = await loadDomainIndex(settings.categories);
   const tabs = await currentWindowTabs();
   const movable = tabs.filter((t) => !t.pinned);
   const pinnedCount = tabs.length - movable.length;
-  const ordered = [...movable].sort((a, b) => sortKey(a, settings.categories).localeCompare(sortKey(b, settings.categories)));
+  const ordered = [...movable].sort((a, b) => sortKey(a, settings.categories, domainIndex).localeCompare(sortKey(b, settings.categories, domainIndex)));
   if (movable.length) await setUndo(sortUndo(movable));
   for (let i = 0; i < ordered.length; i += 1) {
     await chrome.tabs.move(ordered[i].id, { index: pinnedCount + i });
@@ -135,6 +139,7 @@ export async function saveSession() {
 // File loose bookmarks in a target folder into category subfolders + drop dup URLs.
 export async function organizeBookmarks({ parentId } = {}) {
   const settings = await loadSettings();
+  const domainIndex = await loadDomainIndex(settings.categories);
   const target = parentId || settings.bookmarkParentId || '2';
   const children = await chrome.bookmarks.getChildren(target);
   const loose = children.filter((c) => c.url);
@@ -155,7 +160,7 @@ export async function organizeBookmarks({ parentId } = {}) {
     if (seen.has(norm)) { await chrome.bookmarks.remove(bm.id); deduped += 1; continue; }
     seen.add(norm);
 
-    const catId = categorize(bm, settings.categories);
+    const catId = categorize(bm, settings.categories, domainIndex);
     let label;
     if (catId) { const m = categoryMeta(catId, settings.categories); label = `${m.emoji} ${m.label}`; }
     else { const dom = registrableDomain(bm.url); label = dom ? `🔖 ${dom}` : '🔖 Other'; }

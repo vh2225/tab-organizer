@@ -1,6 +1,9 @@
 // Service worker: keyboard command, right-click menu, first-run onboarding, and
 // the optional "auto-group on startup / new window" automation.
 import { groupTabs, maybeAutoGroup } from './src/actions.js';
+import { refreshDataset } from './src/dataset.js';
+
+const DATASET_ALARM = 'refresh-dataset';
 
 chrome.runtime.onInstalled.addListener((details) => {
   chrome.contextMenus.create({
@@ -8,10 +11,17 @@ chrome.runtime.onInstalled.addListener((details) => {
     title: 'Group tabs by topic',
     contexts: ['action', 'page'],
   });
+  // Refresh the domain dataset on install/update, then weekly.
+  refreshDataset();
+  chrome.alarms.create(DATASET_ALARM, { periodInMinutes: 60 * 24 * 7 });
   // First-run onboarding: open the options/welcome page.
   if (details.reason === 'install') {
     chrome.tabs.create({ url: chrome.runtime.getURL('options.html?welcome=1') });
   }
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === DATASET_ALARM) refreshDataset();
 });
 
 chrome.contextMenus.onClicked.addListener((info) => {

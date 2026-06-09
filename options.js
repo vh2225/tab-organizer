@@ -1,4 +1,5 @@
 import { loadSettings, saveSettings, resetSettings } from './src/settings.js';
+import { refreshDataset, getCachedRemote, loadShipped } from './src/dataset.js';
 
 const $ = (s) => document.querySelector(s);
 const COLORS = ['grey', 'blue', 'red', 'yellow', 'green', 'pink', 'purple', 'cyan', 'orange'];
@@ -71,6 +72,30 @@ function flash(msg) {
 const esc = (s) => String(s).replace(/[&<>"]/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[m]));
 const slug = (s) => s.trim().toLowerCase().replace(/[^a-z0-9_-]/g, '');
 
+// ---- Domain list ----
+async function showDatasetStatus() {
+  const [cached, shipped] = await Promise.all([getCachedRemote(), loadShipped()]);
+  const el = $('#datasetStatus');
+  if (cached) {
+    const count = Object.keys(cached.domains || {}).length;
+    const when = cached.fetchedAt ? new Date(cached.fetchedAt).toLocaleDateString() : 'unknown';
+    el.textContent = `Updated ${when} · v${cached.version} · ${count} sites.`;
+  } else {
+    el.textContent = `Using the built-in list (${Object.keys(shipped).length} sites). No update fetched yet.`;
+  }
+}
+
+$('#updateDataset').addEventListener('click', async () => {
+  const btn = $('#updateDataset');
+  btn.disabled = true;
+  $('#datasetStatus').textContent = 'Checking…';
+  const r = await refreshDataset();
+  if (r.updated) $('#datasetStatus').textContent = `Updated ✓ v${r.version} · ${r.count} sites.`;
+  else if (r.reason === 'not-modified') { $('#datasetStatus').textContent = 'Already up to date ✓'; }
+  else { await showDatasetStatus(); flash('Could not update — using cached/built-in list.'); }
+  btn.disabled = false;
+});
+
 // ---- Events ----
 $('#addCategory').addEventListener('click', () => catsEl.appendChild(categoryRow()));
 $('#save').addEventListener('click', save);
@@ -84,3 +109,4 @@ $('#reset').addEventListener('click', async () => {
 });
 
 init();
+showDatasetStatus();

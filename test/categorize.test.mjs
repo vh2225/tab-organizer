@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  categorize, planGroups, findDuplicateTabIds, normalizeUrl, registrableDomain, sortKey,
+  categorize, planGroups, findDuplicateTabIds, normalizeUrl, registrableDomain, sortKey, DEFAULT_CATEGORIES,
 } from '../src/categorize.js';
 
 const tab = (id, url, title = '') => ({ id, url, title });
@@ -17,6 +17,19 @@ test('categorize: domain matches', () => {
 
 test('categorize: keyword fallback via title', () => {
   assert.equal(categorize(tab(1, 'https://example.com/x', 'My flight to Tokyo')), 'travel');
+});
+
+test('categorize: domainIndex matches by exact host then registrable domain', () => {
+  const idx = new Map([['dealcatcher.com', 'shopping'], ['mail.google.com', 'email']]);
+  assert.equal(categorize(tab(1, 'https://dealcatcher.com/x'), DEFAULT_CATEGORIES, idx), 'shopping');
+  assert.equal(categorize(tab(2, 'https://www.dealcatcher.com/x'), DEFAULT_CATEGORIES, idx), 'shopping');
+  assert.equal(categorize(tab(3, 'https://sub.dealcatcher.com/x'), DEFAULT_CATEGORIES, idx), 'shopping'); // registrable fallback
+  assert.equal(categorize(tab(4, 'https://mail.google.com/u/0'), DEFAULT_CATEGORIES, idx), 'email');
+});
+
+test('categorize: domainIndex entry is ignored when its category no longer exists', () => {
+  const idx = new Map([['weird.xyz', 'ghost-category']]);
+  assert.equal(categorize(tab(1, 'https://weird.xyz/a'), DEFAULT_CATEGORIES, idx), null);
 });
 
 test('categorize: skips chrome:// and unknown', () => {

@@ -9,6 +9,7 @@ test('every src module imports without a load-time error', async () => {
   await assert.doesNotReject(import('../src/categorize.js'));
   await assert.doesNotReject(import('../src/settings.js'));
   await assert.doesNotReject(import('../src/ai.js'));
+  await assert.doesNotReject(import('../src/dataset.js'));
   await assert.doesNotReject(import('../src/actions.js'));
   await assert.doesNotReject(import('../src/undo.js'));
 });
