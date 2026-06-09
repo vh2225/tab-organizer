@@ -26,7 +26,9 @@ Gemini Nano) for tabs the rules don't recognize.
 
 **Bookmarks**
 - **File loose bookmarks into folders** — sorts the loose bookmarks in *Other Bookmarks* into
-  category folders and removes exact-duplicate URLs. Existing folders are untouched.
+  category folders, **merges duplicate same-name folders into one** (names match even when one
+  has an emoji prefix, e.g. a user's "Shopping" folds into "🛒 Shopping"), and removes
+  exact-duplicate URLs.
 
 Bonus: keyboard shortcut **Ctrl/Cmd+Shift+O** and a right-click menu both trigger
 "Group tabs by topic".

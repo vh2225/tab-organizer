@@ -133,6 +133,26 @@ test('groupTabs with groupAcrossWindows merges a split category and groups every
   assert.equal(await winOf(3), 2, 'undo returns the merged tab to its window');
 });
 
+test('organizeBookmarks merges duplicate same-name folders (ignoring emoji prefix) and dedupes', async () => {
+  installMockChrome();
+  const f1 = await chrome.bookmarks.create({ parentId: '2', title: '🛒 Shopping' });
+  await chrome.bookmarks.create({ parentId: f1.id, title: 'eBay', url: 'https://ebay.com/a' });
+  const f2 = await chrome.bookmarks.create({ parentId: '2', title: 'Shopping' }); // user-made, same name sans emoji
+  await chrome.bookmarks.create({ parentId: f2.id, title: 'Amazon', url: 'https://amazon.com/x' });
+  await chrome.bookmarks.create({ parentId: f2.id, title: 'eBay again', url: 'https://ebay.com/a' }); // dup url
+
+  const r = await organizeBookmarks();
+  assert.equal(r.mergedFolders, 1, 'the second Shopping folder was merged away');
+
+  const topFolders = (await chrome.bookmarks.getChildren('2')).filter((c) => !c.url);
+  assert.equal(topFolders.filter((c) => /shopping/i.test(c.title)).length, 1, 'one Shopping folder remains');
+
+  const urls = (await chrome.bookmarks.getChildren(f1.id)).filter((k) => k.url).map((k) => k.url);
+  assert.ok(urls.includes('https://ebay.com/a') && urls.includes('https://amazon.com/x'), 'contents merged');
+  assert.equal(urls.filter((u) => u === 'https://ebay.com/a').length, 1, 'duplicate url removed on merge');
+  assert.ok(r.deduped >= 1);
+});
+
 test('organizeBookmarks files loose bookmarks into category folders and drops dup urls', async () => {
   installMockChrome({ bookmarks: [
     { title: 'GitHub', url: 'https://github.com/a' },
