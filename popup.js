@@ -57,32 +57,54 @@ async function initAi() {
   box.disabled = !ready;
 
   if (ready) { $('#aiStatus').textContent = ''; return; }
-  if (status === 'downloading') {
-    runModelDownload();              // already downloading — show live progress
-  } else if (status === 'downloadable') {
-    $('#aiStatus').textContent = '(on-device AI available to download)';
+
+  // Never auto-show a progress bar (it can sit at 0% forever on managed/unsupported
+  // Chrome). Just say it's optional and offer an explicit download button.
+  if (status === 'downloadable' || status === 'downloading') {
+    $('#aiStatus').textContent = status === 'downloading'
+      ? '(on-device AI downloading in the background — optional)'
+      : '(on-device AI available to download — optional)';
+    $('#aiDownloadBtn').textContent = status === 'downloading'
+      ? '📶 Show download progress' : '⬇️ Download on-device AI model';
     $('#aiDownloadBtn').classList.remove('hidden');
   } else {
     $('#aiStatus').textContent = '(model unavailable)';
   }
 }
 
-// Trigger / monitor the model download and reflect progress in a real bar + percentage,
-// instead of a generic "Working…". Resolves when the model is ready (or fails).
+// Trigger / monitor the model download with a real bar. If it doesn't move off 0% within
+// a grace period, it stops pretending and explains the likely cause — Nano downloads are
+// a Chrome-level component that won't progress on managed/unsupported profiles.
 async function runModelDownload() {
   const box = $('#useAi');
   const btn = $('#aiDownloadBtn');
   const bar = $('#aiProgressBar');
   btn.classList.add('hidden');
+  bar.style.width = '0%';
   $('#aiProgress').classList.remove('hidden');
   $('#aiStatus').textContent = 'Downloading model… 0%';
 
+  let progressed = false;
+  let stalled = false;
+  const stallTimer = setTimeout(() => {
+    if (progressed) return;
+    stalled = true;
+    $('#aiProgress').classList.add('hidden');
+    $('#aiStatus').textContent = "(download isn't progressing — likely blocked on this Chrome; everything works without it)";
+    btn.textContent = '↻ Retry download';
+    btn.classList.remove('hidden');
+  }, 15000);
+
   const ok = await downloadModel((loaded) => {
+    if (stalled) return;
+    if (loaded > 0) progressed = true;
     const pct = Math.round(loaded * 100);
     bar.style.width = `${pct}%`;
     $('#aiStatus').textContent = `Downloading model… ${pct}%`;
   });
 
+  clearTimeout(stallTimer);
+  if (stalled) return;
   if (ok) {
     bar.style.width = '100%';
     $('#aiStatus').textContent = '(model ready ✓)';
@@ -92,6 +114,7 @@ async function runModelDownload() {
   } else {
     $('#aiProgress').classList.add('hidden');
     $('#aiStatus').textContent = '(download failed — try again)';
+    btn.textContent = '↻ Retry download';
     btn.classList.remove('hidden');
   }
 }
