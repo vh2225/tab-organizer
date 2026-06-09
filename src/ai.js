@@ -7,6 +7,14 @@
 
 import { DEFAULT_CATEGORIES } from './categorize.js';
 
+// Declare languages on EVERY LanguageModel request (availability/create/prompt) so Chrome
+// doesn't warn and to attest output safety. The Prompt API supports en/ja/es; our prompts and
+// category-id output are English. Docs say to pass the same options to availability() as create().
+const MODEL_LANG = {
+  expectedInputs: [{ type: 'text', languages: ['en'] }],
+  expectedOutputs: [{ type: 'text', languages: ['en'] }],
+};
+
 // Returns the LanguageModel namespace if present, else null. Handles both the
 // current `LanguageModel` global and the older `self.ai.languageModel` shape.
 function modelApi() {
@@ -21,7 +29,7 @@ export async function availabilityStatus() {
   try {
     const api = modelApi();
     if (!api) return 'unavailable';
-    return (await api.availability()) || 'unavailable';
+    return (await api.availability(MODEL_LANG)) || 'unavailable';
   } catch { return 'unavailable'; }
 }
 
@@ -42,8 +50,7 @@ export async function downloadModel(onProgress) {
   let session;
   try {
     session = await api.create({
-      expectedInputs: [{ type: 'text', languages: ['en'] }],
-      expectedOutputs: [{ type: 'text', languages: ['en'] }],
+      ...MODEL_LANG,
       monitor(m) {
         m.addEventListener('downloadprogress', (e) => {
           try { onProgress?.(e.loaded); } catch { /* ignore UI errors */ }
@@ -79,10 +86,7 @@ export async function aiCategorize(items, categories = DEFAULT_CATEGORIES, { dea
 
   const work = (async () => {
     session = await api.create({
-      // Declare languages so Chrome doesn't warn and to attest output safety. The Prompt
-      // API currently supports en/ja/es; our prompt + category-id output are English.
-      expectedInputs: [{ type: 'text', languages: ['en'] }],
-      expectedOutputs: [{ type: 'text', languages: ['en'] }],
+      ...MODEL_LANG,
       initialPrompts: [{
         role: 'system',
         content:

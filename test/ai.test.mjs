@@ -7,9 +7,9 @@ import { aiCategorize, aiAvailable, availabilityStatus, downloadModel } from '..
 import { DEFAULT_CATEGORIES } from '../src/categorize.js';
 
 function fakeModel(answer, availability = 'available') {
-  const calls = { create: null };
+  const calls = { create: null, availability: null };
   globalThis.LanguageModel = {
-    availability: async () => availability,
+    availability: async (opts) => { calls.availability = opts; return availability; },
     create: async (opts) => {
       calls.create = opts;
       return { prompt: async () => answer, destroy() {} };
@@ -57,6 +57,19 @@ test('availabilityStatus surfaces the raw model state for accurate UI messaging'
   assert.equal(await availabilityStatus(), 'downloading');
   globalThis.LanguageModel = undefined;
   assert.equal(await availabilityStatus(), 'unavailable');
+});
+
+test('availabilityStatus declares the language on the availability() request (no Chrome warning)', async () => {
+  const calls = fakeModel('shopping', 'available');
+  await availabilityStatus();
+  assert.deepEqual(calls.availability.expectedOutputs, [{ type: 'text', languages: ['en'] }]);
+  assert.deepEqual(calls.availability.expectedInputs, [{ type: 'text', languages: ['en'] }]);
+});
+
+test('downloadModel declares the language on its create() request', async () => {
+  const calls = fakeModel('shopping', 'available');
+  await downloadModel(() => {});
+  assert.deepEqual(calls.create.expectedOutputs, [{ type: 'text', languages: ['en'] }]);
 });
 
 test('downloadModel streams download progress (0..1) and resolves true when ready', async () => {
