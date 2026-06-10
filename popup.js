@@ -18,6 +18,7 @@ const MESSAGES = {
   sortTabs: (r) => `Sorted ${r.sorted} tabs.`,
   dedupeTabs: (r) => r.closed ? `Closed ${r.closed} duplicate tabs.` : 'No duplicates found.',
   saveSession: (r) => `Saved ${r.saved} tabs to “${r.folder}”.`,
+  restoreSession: (r) => r.restored ? `Reopened ${r.restored} tabs from “${r.folder}” in a new window.` : 'No saved sessions yet.',
   undo: (r) => r.undone ? `Undid the last ${UNDO_LABEL[r.action] || 'action'}.` : 'Nothing to undo.',
 };
 

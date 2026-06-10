@@ -27,7 +27,7 @@ machine.** Optional smart categorization uses Chrome's **built-in on-device AI**
 • Sort tabs so related ones sit together
 • Close duplicate tabs (keeps the first, skips pinned)
 • Undo the last action — reopens closed tabs, restores order, rebuilds groups
-• Save all tabs as a dated bookmark "session"
+• Save all tabs as a dated bookmark "session" — and restore the last one in a new window
 • Fully customizable categories — make it match how *you* browse
 • On-device AI grouping for sites the rules don't recognize (optional, 100% local)
 • Auto-group on startup and every new window — set it and forget it

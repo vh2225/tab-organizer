@@ -4,7 +4,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { installMockChrome } from './mock-chrome.mjs';
 import {
-  groupTabs, ungroupAll, sortTabs, dedupeTabs, saveSession,
+  groupTabs, ungroupAll, sortTabs, dedupeTabs, saveSession, restoreSession,
 } from '../src/actions.js';
 import { undoLast, getUndo } from '../src/undo.js';
 
@@ -102,6 +102,28 @@ test('saveSession writes every http tab into a dated session folder', async () =
   ] });
   const r = await saveSession();
   assert.equal(r.saved, 2);
+});
+
+test('restoreSession reopens the newest saved session in a new window', async () => {
+  const state = installMockChrome({ tabs: [tab(1, 'https://a.com/')] });
+  await saveSession(); // "Session <now>" with a.com
+  // An older session that must NOT be the one restored.
+  const parent = (await chrome.bookmarks.getChildren('2')).find((c) => c.title === 'Tab Organizer Sessions');
+  const old = await chrome.bookmarks.create({ parentId: parent.id, title: 'Session 2020-01-01 00:00' });
+  await chrome.bookmarks.create({ parentId: old.id, title: 'old', url: 'https://old.example/' });
+
+  const r = await restoreSession();
+  assert.equal(r.restored, 1);
+  assert.match(r.folder, /^Session /);
+  const urls = state.tabs.map((t) => t.url);
+  assert.ok(urls.filter((u) => u === 'https://a.com/').length >= 2, 'newest session tab reopened');
+  assert.ok(!urls.includes('https://old.example/'), 'older session left alone');
+});
+
+test('restoreSession with no saved sessions is a harmless no-op', async () => {
+  installMockChrome({ tabs: [tab(1, 'https://a.com/')] });
+  const r = await restoreSession();
+  assert.deepEqual(r, { restored: 0 });
 });
 
 const winOf = async (id) => (await chrome.tabs.query({})).find((t) => t.id === id)?.windowId;

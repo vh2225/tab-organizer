@@ -162,6 +162,21 @@ export async function saveSession() {
   return { saved: saveable.length, folder: folder.title };
 }
 
+// Reopen the most recent saved session in a new window. Session titles embed an ISO
+// timestamp ("Session 2026-06-09 14:30"), so the lexically greatest title is the newest.
+export async function restoreSession() {
+  const roots = await chrome.bookmarks.getChildren('2'); // '2' = Other Bookmarks
+  const parent = roots.find((c) => !c.url && c.title === 'Tab Organizer Sessions');
+  if (!parent) return { restored: 0 };
+  const sessions = (await chrome.bookmarks.getChildren(parent.id)).filter((c) => !c.url);
+  if (!sessions.length) return { restored: 0 };
+  const latest = sessions.reduce((a, b) => (b.title > a.title ? b : a));
+  const urls = (await chrome.bookmarks.getChildren(latest.id)).filter((c) => c.url).map((c) => c.url);
+  if (!urls.length) return { restored: 0 };
+  await chrome.windows.create({ url: urls });
+  return { restored: urls.length, folder: latest.title };
+}
+
 // Auto-group on startup / new window (called by background.js when enabled in settings).
 export async function maybeAutoGroup() {
   const settings = await loadSettings();

@@ -89,7 +89,14 @@ export function installMockChrome({ tabs = [], bookmarks = [], currentWindowId =
         .filter((g) => (info.windowId == null || g.windowId === info.windowId) && (info.title == null || g.title === info.title));
     },
   };
-  const windowsApi = { getCurrent: async () => ({ id: currentWindowId }) };
+  const windowsApi = {
+    getCurrent: async () => ({ id: currentWindowId }),
+    create: async ({ url = [] } = {}) => {
+      const id = Math.max(currentWindowId, ...windows.keys()) + 1;
+      for (const u of (Array.isArray(url) ? url : [url])) await tabsApi.create({ url: u, windowId: id });
+      return { id };
+    },
+  };
 
   // --- bookmarks: node map; root children seeded under parentId '2' (Other Bookmarks) ---
   let nextBmId = 1000;

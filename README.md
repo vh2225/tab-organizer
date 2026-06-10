@@ -20,6 +20,7 @@ Gemini Nano) for tabs the rules don't recognize.
   touches pinned tabs).
 - **Save session** — saves every tab in the window to a dated bookmark folder under
   *Other Bookmarks → Tab Organizer Sessions*.
+- **Restore last session** — reopens the most recently saved session in a new window.
 - **Ungroup all** — clears groups without closing anything.
 - **Undo last action** — reverses the most recent group / sort / close-duplicates / ungroup
   (re-opens closed tabs, restores order, rebuilds groups). One step back, no surprises.
