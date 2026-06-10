@@ -1,6 +1,8 @@
 # Smart Tab Organizer
 
 A Chrome (Manifest V3) extension that **smartly organizes your open tabs**.
+Part of the [3app.studio](https://3app.studio) studio — landing page at
+[tab-organizer.3app.studio](https://tab-organizer.3app.studio).
 Categorization runs **locally and free** — no API key, no account, works offline — using a
 curated domain/keyword ruleset, with an **optional on-device AI** pass (Chrome's built-in
 Gemini Nano) for tabs the rules don't recognize.

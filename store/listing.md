@@ -42,7 +42,8 @@ No tracking. No ads. No account. No paid tiers. Just a tidy browser.
 5. The privacy angle as a graphic: "Your tabs never leave your browser."
 
 ## Required for submission
-- [ ] Privacy policy URL (host `store/PRIVACY.md` content on a public page)
+- [ ] Privacy policy URL: `https://tab-organizer.3app.studio/#privacy` (hosted on the studio
+      landing; mirrors `store/PRIVACY.md`)
 - [ ] 128×128 icon (included: `icons/icon128.png`)
 - [ ] At least 1 screenshot (1280×800 or 640×400)
 - [ ] Justify each permission in the listing's privacy tab (see PRIVACY.md table)
