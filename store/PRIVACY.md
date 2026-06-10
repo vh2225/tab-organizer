@@ -1,4 +1,4 @@
-# Privacy Policy — Smart Tab & Bookmark Organizer
+# Privacy Policy — Smart Tab Organizer
 
 _Last updated: 2026-06-07_
 
@@ -7,10 +7,11 @@ your browser.**
 
 ## What the extension accesses
 
-To organize your tabs and bookmarks, the extension reads:
+To organize your tabs, the extension reads:
 
 - **Open tabs** in the current window (URL and title) — to group, sort, and de-duplicate them.
-- **Bookmarks** — to file loose bookmarks into folders and save sessions.
+- **Bookmarks** — only to save and restore tab sessions (a dated folder under
+  *Other Bookmarks → Tab Organizer Sessions*).
 - **Local extension storage** — to remember your settings and custom categories
   (stored via `chrome.storage.sync`, which Chrome may sync across your own signed-in devices).
 
@@ -44,7 +45,7 @@ processing of any kind.
 | --- | --- |
 | `tabs` | Read tab URLs/titles to group, sort, de-dupe |
 | `tabGroups` | Create and label the color-coded groups |
-| `bookmarks` | File bookmarks into folders, save sessions |
+| `bookmarks` | Save and restore tab sessions as bookmark folders |
 | `storage` | Save your settings and custom categories |
 | `contextMenus` | The right-click "Group tabs by topic" entry |
 

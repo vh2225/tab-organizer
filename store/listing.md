@@ -1,10 +1,10 @@
 # Chrome Web Store listing — copy & assets checklist
 
 ## Name (≤ 45 chars)
-Smart Tab & Bookmark Organizer — Private, Local
+Smart Tab Organizer — Private, Local
 
 ## Summary (≤ 132 chars)
-Group tabs by topic, kill duplicates, and tidy bookmarks — 100% local, no account, free on-device AI. Your data never leaves Chrome.
+Group tabs by topic, kill duplicates, save sessions — 100% local, no account, free on-device AI. Your data never leaves Chrome.
 
 ## Category
 Workflow & Planning (or Productivity)
@@ -12,13 +12,13 @@ Workflow & Planning (or Productivity)
 ## Description (long)
 **Tame tab chaos in one click — without handing your browsing history to anyone.**
 
-Smart Tab & Bookmark Organizer groups your open tabs into clean, color-coded topic groups
+Smart Tab Organizer groups your open tabs into clean, color-coded topic groups
 (Dev, Email, Social, Media, Shopping, Finance, Travel, Work…), closes duplicates, sorts related
-tabs together, and files messy bookmarks into folders.
+tabs together, and saves whole windows as restorable sessions.
 
 **Why it's different: it's private by design.**
 Unlike cloud tab managers, this extension needs **no account, no sign-in, and no servers.** All
-organizing happens locally in your browser — your tabs, URLs, and bookmarks **never leave your
+organizing happens locally in your browser — your tabs and URLs **never leave your
 machine.** Optional smart categorization uses Chrome's **built-in on-device AI** (also 100% local).
 
 **Everything's included — free, no account, no tracking:**
