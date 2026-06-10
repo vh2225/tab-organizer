@@ -36,10 +36,13 @@ machine.** Optional smart categorization uses Chrome's **built-in on-device AI**
 No tracking. No ads. No account. No paid tiers. Just a tidy browser.
 
 ## Screenshots to capture (1280×800)
-1. A messy window → after "Group tabs by topic" (color-coded groups). The hero shot.
-2. The popup UI (the action buttons + Undo).
-3. The Options page with the editable Categories list.
+1. A messy window → after "Group tabs by topic" (color-coded groups). The hero shot —
+   needs a real desktop session (the tab strip isn't capturable from page content).
+2. The popup UI (the action buttons + Undo). **Done:** `screenshots/2-popup.png`.
+3. The Options page with the editable Categories list. **Done:** `screenshots/3-options.png`.
 5. The privacy angle as a graphic: "Your tabs never leave your browser."
+
+Regenerate 2–3 anytime with `NODE_PATH=$(npm root -g) node scripts/store-screenshots.mjs`.
 
 ## Required for submission
 - [ ] Privacy policy URL: `https://tab-organizer.3app.studio/#privacy` (hosted on the studio
